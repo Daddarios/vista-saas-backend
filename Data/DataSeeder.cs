@@ -24,7 +24,10 @@ public static class DataSeeder
 
         // Demo SuperAdmin kullanıcı
         const string adminEmail = "admin@vista.local";
-        if (await userManager.FindByEmailAsync(adminEmail) is null)
+        const string adminPassword = "Test123!";
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+
+        if (existingAdmin is null)
         {
             var admin = new Benutzer
             {
@@ -32,12 +35,22 @@ public static class DataSeeder
                 Email = adminEmail,
                 Vorname = "System",
                 Nachname = "Admin",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                LockoutEnabled = true
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin123!");
+            var result = await userManager.CreateAsync(admin, adminPassword);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, "SuperAdmin");
+        }
+        else
+        {
+            // Şifre/lockout düzelt (development reset)
+            await userManager.SetLockoutEnabledAsync(existingAdmin, true);
+            await userManager.SetLockoutEndDateAsync(existingAdmin, null);
+            await userManager.ResetAccessFailedCountAsync(existingAdmin);
+            var token = await userManager.GeneratePasswordResetTokenAsync(existingAdmin);
+            await userManager.ResetPasswordAsync(existingAdmin, token, adminPassword);
         }
     }
 

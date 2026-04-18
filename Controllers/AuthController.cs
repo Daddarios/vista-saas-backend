@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Vista.Core.Data;
 using Vista.Core.DTOs.Auth;
 using Vista.Core.Models;
 using Vista.Core.Services;
@@ -17,6 +19,8 @@ public class AuthController : ControllerBase
     private readonly ZweiFaktorService _zweiFaktorService;
     private readonly EmailService _emailService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IWebHostEnvironment _env;
+    private readonly AppDbContext _db;
 
     public AuthController(
         UserManager<Benutzer> userManager,
@@ -24,7 +28,9 @@ public class AuthController : ControllerBase
         JwtService jwtService,
         ZweiFaktorService zweiFaktorService,
         EmailService emailService,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IWebHostEnvironment env,
+        AppDbContext db)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -32,6 +38,8 @@ public class AuthController : ControllerBase
         _zweiFaktorService = zweiFaktorService;
         _emailService = emailService;
         _logger = logger;
+        _env = env;
+        _db = db;
     }
 
     /// <summary>
@@ -52,9 +60,18 @@ public class AuthController : ControllerBase
             return Unauthorized(new LoginResponseDto { Nachricht = "Ungültige Anmeldedaten." });
 
         var code = await _zweiFaktorService.CodeGenerierenAsync(dto.Email);
-        await _emailService.SendVerificationCodeAsync(dto.Email, code);
 
-        _logger.LogInformation("2FA-Code an {Email} gesendet", dto.Email);
+        try
+        {
+            await _emailService.SendVerificationCodeAsync(dto.Email, code);
+            _logger.LogInformation("2FA-Code an {Email} gesendet", dto.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "E-Mail-Versand fehlgeschlagen für {Email}", dto.Email);
+            // Fallback — kodu logla
+            _logger.LogWarning(">>> FALLBACK 2FA CODE für {Email}: {Code} <<<", dto.Email, code);
+        }
 
         return Ok(new LoginResponseDto
         {
@@ -84,7 +101,9 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Benutzer {Email} erfolgreich angemeldet", dto.Email);
 
-        return Ok(new { Nachricht = "Erfolgreich angemeldet.", tokens.AccessTokenAblauf });
+        var mandant = await _db.Mandanten.FirstOrDefaultAsync(m => m.IstAktiv && !m.IstGeloescht);
+
+        return Ok(new { Nachricht = "Erfolgreich angemeldet.", tokens.AccessTokenAblauf, MandantId = mandant?.Id });
     }
 
     /// <summary>

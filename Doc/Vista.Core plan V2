@@ -722,3 +722,28 @@ dotnet ef database update --project Vista.Core
 - Projeyi commit + push (`git push origin main`)
 - GitHub Actions CI/CD otomatik çalışacak
 - Repo: `https://github.com/Daddarios/vista-saas-backend`
+
+
+### Senin bilgisayarın (localhost)
+│
+├── Docker Desktop
+│   ├── vistacore-api-1       → localhost:8080  (Backend API - Production)
+│   ├── vistacore-sqlserver-1 → localhost:1433  (SQL Server)
+│   └── vistacore-redis-1    → localhost:6379  (Redis)
+│
+├── Visual Studio 2026       → localhost:5188  (Backend API - Development, F5 ile)
+├── VS Code                  → localhost:5173  (Frontend React)
+│
+└── Kaynak kod → C:\Users\onurg\source\repos\Vista.Core\  (bu değişmedi)
+
+
+
+###COCKER 
+  
+  
+  Kullanıcı → Frontend (React) → API → SQL Server (kalıcı veri)
+                                  → Redis (geçici 2FA kodu)
+DOCKER 3 Containers
+🔵 API	Senin yazdığın Vista.Core backend	Tüm iş mantığı burada — login, müşteri CRUD, ticket, chat, dosya yükleme. Frontend bununla konuşuyor
+🟢  SQL Server	Veritabanı	Tüm veriler burada saklanıyor — kullanıcılar, müşteriler, projeler, ticketlar, mesajlar
+🔴 Redis	Geçici hafıza (cache)	Sadece 2FA kodlarını 5 dakikalığına tutuyor. Hızlı, uçucu — sunucu kapanınca silinir
