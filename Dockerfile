@@ -6,7 +6,7 @@ COPY Vista.Core/Vista.Core.csproj Vista.Core/
 RUN dotnet restore Vista.Core/Vista.Core.csproj
 
 COPY Vista.Core/ Vista.Core/
-RUN dotnet publish Vista.Core/Vista.Core.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish Vista.Core/Vista.Core.csproj -c Release -o /app/publish
 
 # Runtime aşaması
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
