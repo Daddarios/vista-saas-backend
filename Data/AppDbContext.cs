@@ -31,6 +31,12 @@ public class AppDbContext : IdentityDbContext<Benutzer>
     public DbSet<TicketNachricht> TicketNachrichten => Set<TicketNachricht>();
     public DbSet<ChatRaum> ChatRaeume => Set<ChatRaum>();
     public DbSet<ChatNachricht> ChatNachrichten => Set<ChatNachricht>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // Taslak — Ödeme & Abonelik
+    public DbSet<Abonnement> Abonnements => Set<Abonnement>();
+    public DbSet<Zahlung> Zahlungen => Set<Zahlung>();
+    public DbSet<Rechnung> Rechnungen => Set<Rechnung>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

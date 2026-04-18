@@ -1,0 +1,149 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Vista.Core.Models;
+
+namespace Vista.Core.Controllers;
+
+[ApiController]
+[Authorize(Roles = "Admin,SuperAdmin")]
+[Route("api/[controller]")]
+public class BenutzerController : ControllerBase
+{
+    private readonly UserManager<Benutzer> _userManager;
+    private readonly ILogger<BenutzerController> _logger;
+
+    public BenutzerController(UserManager<Benutzer> userManager, ILogger<BenutzerController> logger)
+    {
+        _userManager = userManager;
+        _logger = logger;
+    }
+
+    [HttpGet]
+    public IActionResult GetAll()
+    {
+        var list = _userManager.Users
+            .Select(b => new
+            {
+                b.Id,
+                b.Vorname,
+                b.Nachname,
+                b.Email,
+                b.RufNummer,
+                b.Abteilung,
+                b.Rolle,
+                b.Bild
+            })
+            .ToList();
+
+        return Ok(list);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(string id)
+    {
+        var b = await _userManager.FindByIdAsync(id);
+        if (b is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+
+        var rollen = await _userManager.GetRolesAsync(b);
+
+        return Ok(new
+        {
+            b.Id,
+            b.Vorname,
+            b.Nachname,
+            b.Email,
+            b.RufNummer,
+            b.Abteilung,
+            b.Rolle,
+            b.Bild,
+            b.Hinweise,
+            Rollen = rollen
+        });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] BenutzerCreateDto dto)
+    {
+        var benutzer = new Benutzer
+        {
+            UserName = dto.Email,
+            Email = dto.Email,
+            Vorname = dto.Vorname,
+            Nachname = dto.Nachname,
+            RufNummer = dto.RufNummer,
+            Abteilung = dto.Abteilung,
+            Rolle = dto.Rolle,
+            EmailConfirmed = true
+        };
+
+        var result = await _userManager.CreateAsync(benutzer, dto.Passwort);
+        if (!result.Succeeded)
+            return BadRequest(new { Nachricht = "Erstellung fehlgeschlagen.", Fehler = result.Errors.Select(e => e.Description) });
+
+        if (!string.IsNullOrWhiteSpace(dto.Rolle))
+            await _userManager.AddToRoleAsync(benutzer, dto.Rolle);
+
+        _logger.LogInformation("Benutzer erstellt | Email: {Email}", dto.Email);
+        return CreatedAtAction(nameof(GetById), new { id = benutzer.Id }, new { benutzer.Id });
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] BenutzerUpdateDto dto)
+    {
+        var benutzer = await _userManager.FindByIdAsync(id);
+        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+
+        benutzer.Vorname = dto.Vorname;
+        benutzer.Nachname = dto.Nachname;
+        benutzer.RufNummer = dto.RufNummer;
+        benutzer.Abteilung = dto.Abteilung;
+        benutzer.Hinweise = dto.Hinweise;
+
+        if (!string.IsNullOrWhiteSpace(dto.Rolle) && dto.Rolle != benutzer.Rolle)
+        {
+            var currentRoles = await _userManager.GetRolesAsync(benutzer);
+            await _userManager.RemoveFromRolesAsync(benutzer, currentRoles);
+            await _userManager.AddToRoleAsync(benutzer, dto.Rolle);
+            benutzer.Rolle = dto.Rolle;
+        }
+
+        await _userManager.UpdateAsync(benutzer);
+
+        _logger.LogInformation("Benutzer aktualisiert | Id: {Id}", id);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        var benutzer = await _userManager.FindByIdAsync(id);
+        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+
+        await _userManager.DeleteAsync(benutzer);
+
+        _logger.LogInformation("Benutzer gelöscht | Id: {Id}", id);
+        return NoContent();
+    }
+}
+
+public class BenutzerCreateDto
+{
+    public string Email { get; set; } = string.Empty;
+    public string Passwort { get; set; } = string.Empty;
+    public string Vorname { get; set; } = string.Empty;
+    public string Nachname { get; set; } = string.Empty;
+    public string RufNummer { get; set; } = string.Empty;
+    public string Abteilung { get; set; } = string.Empty;
+    public string Rolle { get; set; } = string.Empty;
+}
+
+public class BenutzerUpdateDto
+{
+    public string Vorname { get; set; } = string.Empty;
+    public string Nachname { get; set; } = string.Empty;
+    public string RufNummer { get; set; } = string.Empty;
+    public string Abteilung { get; set; } = string.Empty;
+    public string Rolle { get; set; } = string.Empty;
+    public string Hinweise { get; set; } = string.Empty;
+}

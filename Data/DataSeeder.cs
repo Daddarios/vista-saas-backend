@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Vista.Core.Models;
 
@@ -5,6 +6,41 @@ namespace Vista.Core.Data;
 
 public static class DataSeeder
 {
+    /// <summary>
+    /// Identity rollerini ve demo admin kullanıcısını seed eder (ADIM 3.9)
+    /// </summary>
+    public static async Task SeedRolesAndUsersAsync(IServiceProvider serviceProvider)
+    {
+        var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = serviceProvider.GetRequiredService<UserManager<Benutzer>>();
+
+        string[] rollen = ["SuperAdmin", "Admin", "Manager", "Standard", "NurLesen"];
+
+        foreach (var rolle in rollen)
+        {
+            if (!await roleManager.RoleExistsAsync(rolle))
+                await roleManager.CreateAsync(new IdentityRole(rolle));
+        }
+
+        // Demo SuperAdmin kullanıcı
+        const string adminEmail = "admin@vista.local";
+        if (await userManager.FindByEmailAsync(adminEmail) is null)
+        {
+            var admin = new Benutzer
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                Vorname = "System",
+                Nachname = "Admin",
+                EmailConfirmed = true
+            };
+
+            var result = await userManager.CreateAsync(admin, "Admin123!");
+            if (result.Succeeded)
+                await userManager.AddToRoleAsync(admin, "SuperAdmin");
+        }
+    }
+
     public static async Task SeedAsync(AppDbContext dbContext, CancellationToken cancellationToken = default)
     {
         await dbContext.Database.MigrateAsync(cancellationToken);
