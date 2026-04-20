@@ -120,6 +120,7 @@ public class TicketController : ControllerBase
     {
         var mandantId = GetMandantId();
         if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+        if (dto.KundeId == Guid.Empty) return BadRequest(new { Nachricht = "KundeId fehlt." });
 
         var ticket = new Ticket
         {
@@ -154,7 +155,8 @@ public class TicketController : ControllerBase
         ticket.Kategorie = dto.Kategorie;
         ticket.Faelligkeitsdatum = dto.Faelligkeitsdatum;
         ticket.ZugewiesenAnId = dto.ZugewiesenAnId;
-        ticket.KundeId = dto.KundeId;
+        if (dto.KundeId != Guid.Empty)
+            ticket.KundeId = dto.KundeId;
         ticket.ProjektId = dto.ProjektId;
         ticket.AktualisiertAm = DateTime.UtcNow;
 
@@ -168,8 +170,15 @@ public class TicketController : ControllerBase
     /// Durum değiştirme + email bildirimi (ADIM 5.3)
     /// </summary>
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] TicketStatusChangeDto dto)
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] TicketStatusChangeDto? dto, [FromQuery] string? status = null)
     {
+        var neuerStatus = !string.IsNullOrWhiteSpace(dto?.NeuerStatus)
+            ? dto!.NeuerStatus
+            : status;
+
+        if (string.IsNullOrWhiteSpace(neuerStatus))
+            return BadRequest(new { Nachricht = "Neuer Status fehlt." });
+
         var ticket = await _db.Tickets
             .Include(t => t.ZugewiesenAn)
             .FirstOrDefaultAsync(t => t.Id == id && !t.IstGeloescht);
@@ -177,18 +186,18 @@ public class TicketController : ControllerBase
         if (ticket is null) return NotFound(new { Nachricht = "Ticket nicht gefunden." });
 
         var alterStatus = ticket.Status;
-        ticket.Status = dto.NeuerStatus;
+        ticket.Status = neuerStatus;
         ticket.AktualisiertAm = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("Ticket Status geändert | Id: {Id} | {Alt} → {Neu}", id, alterStatus, dto.NeuerStatus);
+        _logger.LogInformation("Ticket Status geändert | Id: {Id} | {Alt} → {Neu}", id, alterStatus, neuerStatus);
 
         // Email bildirimi
         if (ticket.ZugewiesenAn?.Email is not null)
         {
             try
             {
-                await _emailService.SendStatusChangeAsync(ticket.ZugewiesenAn.Email, ticket.Titel, alterStatus, dto.NeuerStatus);
+                await _emailService.SendStatusChangeAsync(ticket.ZugewiesenAn.Email, ticket.Titel, alterStatus, neuerStatus);
             }
             catch (Exception ex)
             {
@@ -197,9 +206,9 @@ public class TicketController : ControllerBase
         }
 
         // SignalR push bildirimi
-        await _hub.Clients.Group($"ticket-{id}").SendAsync("TicketStatusChanged", new { TicketId = id, AlterStatus = alterStatus, NeuerStatus = dto.NeuerStatus });
+        await _hub.Clients.Group($"ticket-{id}").SendAsync("TicketStatusChanged", new { TicketId = id, AlterStatus = alterStatus, NeuerStatus = neuerStatus });
 
-        return Ok(new { Nachricht = $"Status: {alterStatus} → {dto.NeuerStatus}" });
+        return Ok(new { Nachricht = $"Status: {alterStatus} → {neuerStatus}" });
     }
 
     [HttpDelete("{id}")]

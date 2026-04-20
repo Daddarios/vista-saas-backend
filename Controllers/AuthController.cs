@@ -126,6 +126,36 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Aktif oturumdaki kullanıcı bilgisi
+    /// </summary>
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+    {
+        var benutzerId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(benutzerId))
+            return Unauthorized(new { Nachricht = "Benutzer nicht authentifiziert." });
+
+        var benutzer = await _userManager.FindByIdAsync(benutzerId);
+        if (benutzer is null)
+            return Unauthorized(new { Nachricht = "Benutzer nicht gefunden." });
+
+        var rollen = await _userManager.GetRolesAsync(benutzer);
+
+        return Ok(new
+        {
+            benutzer.Id,
+            benutzer.Email,
+            benutzer.Vorname,
+            benutzer.Nachname,
+            benutzer.RufNummer,
+            benutzer.Abteilung,
+            benutzer.Rolle,
+            Rollen = rollen
+        });
+    }
+
+    /// <summary>
     /// Logout → tüm RefreshToken'lar iptal + Cookie temizle
     /// </summary>
     [Authorize]

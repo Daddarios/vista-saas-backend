@@ -9,10 +9,11 @@ public class TicketRequestDtoValidator : AbstractValidator<TicketRequestDto>
     {
         RuleFor(x => x.Titel).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Beschreibung).NotEmpty().MaximumLength(4000);
-        RuleFor(x => x.Status).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Status)
+            .MaximumLength(50)
+            .When(x => !string.IsNullOrWhiteSpace(x.Status));
         RuleFor(x => x.Prioritaet).NotEmpty().MaximumLength(50);
         RuleFor(x => x.Kategorie).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.KundeId).NotEqual(Guid.Empty);
         RuleFor(x => x.ProjektId)
             .NotEqual(Guid.Empty)
             .When(x => x.ProjektId.HasValue);
