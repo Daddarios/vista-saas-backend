@@ -2,7 +2,7 @@
 
 ## 📋 Genel Bakış
 
-Backend'de hazırladığımız dosya yükleme sistemini React/Next.js frontend'inde kullanmak için bu rehberi takip edin.
+Backend'de hazırladığımız dosya yükleme sistemini React frontend'inde kullanmak için bu rehberi takip edin.
 
 ---
 
