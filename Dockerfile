@@ -10,7 +10,8 @@ RUN dotnet publish "Vista.Core.csproj" -c Release -o /app/publish /p:UseAppHost=
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-RUN mkdir -p /app/Storage /app/Logs
+# Storage klasörlerini oluştur (Logos ve Avatars için)
+RUN mkdir -p /app/Storage/Logos /app/Storage/Avatars /app/Logs
 
 COPY --from=build /app/publish .
 
