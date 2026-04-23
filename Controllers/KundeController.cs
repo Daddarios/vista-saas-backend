@@ -5,6 +5,7 @@ using Vista.Core.Data;
 using Vista.Core.DTOs.Common;
 using Vista.Core.DTOs.Kunde;
 using Vista.Core.Models;
+using Vista.Core.Services;
 
 namespace Vista.Core.Controllers;
 
@@ -15,11 +16,13 @@ public class KundeController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ILogger<KundeController> _logger;
+    private readonly FileStorageService _fileStorage;
 
-    public KundeController(AppDbContext db, ILogger<KundeController> logger)
+    public KundeController(AppDbContext db, ILogger<KundeController> logger, FileStorageService fileStorage)
     {
         _db = db;
         _logger = logger;
+        _fileStorage = fileStorage;
     }
 
     [HttpGet]
@@ -142,12 +145,74 @@ public class KundeController : ControllerBase
         var kunde = await _db.Kunden.FirstOrDefaultAsync(k => k.Id == id && !k.IstGeloescht);
         if (kunde is null) return NotFound(new { Nachricht = "Kunde nicht gefunden." });
 
+        // Soft delete
         kunde.IstGeloescht = true;
         kunde.AktualisiertAm = DateTime.UtcNow;
+
+        // Logo dosyasını sil (varsa)
+        if (!string.IsNullOrWhiteSpace(kunde.Logo))
+        {
+            await _fileStorage.DeleteFileAsync(kunde.Logo);
+            _logger.LogInformation("Kunde Logo silindi | KundeId: {Id}, Logo: {Logo}", id, kunde.Logo);
+        }
+
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Kunde soft-deleted | Id: {Id}", id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Müşteri logosu yükle (PNG, JPEG, JPG - Max 5MB)
+    /// </summary>
+    [HttpPost("{id}/upload-logo")]
+    public async Task<IActionResult> UploadLogo(Guid id, IFormFile logoFile)
+    {
+        var kunde = await _db.Kunden.FirstOrDefaultAsync(k => k.Id == id && !k.IstGeloescht);
+        if (kunde is null) return NotFound(new { Nachricht = "Kunde nicht gefunden." });
+
+        var (success, fileUrl, errorMessage) = await _fileStorage.UploadFileAsync(
+            logoFile, 
+            FileStorageService.LogosFolder, 
+            id.ToString(),
+            kunde.Logo // Eski logoyu sil
+        );
+
+        if (!success)
+            return BadRequest(new { Nachricht = errorMessage });
+
+        // Yeni logo URL'ini kaydet
+        kunde.Logo = fileUrl!;
+        kunde.AktualisiertAm = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Kunde Logo yüklendi | KundeId: {Id}, Logo: {Logo}", id, fileUrl);
+        return Ok(new { Logo = fileUrl, Nachricht = "Logo başarıyla yüklendi." });
+    }
+
+    /// <summary>
+    /// Müşteri logosunu sil
+    /// </summary>
+    [HttpDelete("{id}/delete-logo")]
+    public async Task<IActionResult> DeleteLogo(Guid id)
+    {
+        var kunde = await _db.Kunden.FirstOrDefaultAsync(k => k.Id == id && !k.IstGeloescht);
+        if (kunde is null) return NotFound(new { Nachricht = "Kunde nicht gefunden." });
+
+        if (string.IsNullOrWhiteSpace(kunde.Logo))
+            return BadRequest(new { Nachricht = "Logo zaten mevcut değil." });
+
+        var success = await _fileStorage.DeleteFileAsync(kunde.Logo);
+        if (!success)
+            return StatusCode(500, new { Nachricht = "Logo silinirken bir hata oluştu." });
+
+        // DB'den logo URL'ini temizle
+        kunde.Logo = string.Empty;
+        kunde.AktualisiertAm = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Kunde Logo silindi | KundeId: {Id}", id);
+        return Ok(new { Nachricht = "Logo başarıyla silindi." });
     }
 
     private Guid? GetMandantId()

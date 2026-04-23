@@ -82,6 +82,7 @@ builder.Services.AddStackExchangeRedisCache(opt =>
 });
 builder.Services.AddScoped<ZweiFaktorService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<FileStorageService>();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -102,6 +103,20 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
+
+// Static files: Logos ve Avatarlar için
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "Storage")),
+    RequestPath = "/storage",
+    OnPrepareResponse = ctx =>
+    {
+        // Cache ayarları (1 gün)
+        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=86400");
+    }
+});
+
 app.UseCors("ReactApp");
 app.UseSwagger();
 app.UseSwaggerUI();

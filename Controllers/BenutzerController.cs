@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Vista.Core.Models;
+using Vista.Core.Services;
 
 namespace Vista.Core.Controllers;
 
@@ -12,11 +13,13 @@ public class BenutzerController : ControllerBase
 {
     private readonly UserManager<Benutzer> _userManager;
     private readonly ILogger<BenutzerController> _logger;
+    private readonly FileStorageService _fileStorage;
 
-    public BenutzerController(UserManager<Benutzer> userManager, ILogger<BenutzerController> logger)
+    public BenutzerController(UserManager<Benutzer> userManager, ILogger<BenutzerController> logger, FileStorageService fileStorage)
     {
         _userManager = userManager;
         _logger = logger;
+        _fileStorage = fileStorage;
     }
 
     [HttpGet]
@@ -120,10 +123,68 @@ public class BenutzerController : ControllerBase
         var benutzer = await _userManager.FindByIdAsync(id);
         if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
+        // Avatar dosyasını sil (varsa)
+        if (!string.IsNullOrWhiteSpace(benutzer.Bild))
+        {
+            await _fileStorage.DeleteFileAsync(benutzer.Bild);
+            _logger.LogInformation("Benutzer Avatar silindi | BenutzerId: {Id}, Avatar: {Avatar}", id, benutzer.Bild);
+        }
+
         await _userManager.DeleteAsync(benutzer);
 
         _logger.LogInformation("Benutzer gelöscht | Id: {Id}", id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Kullanıcı avatarı yükle (PNG, JPEG, JPG - Max 5MB)
+    /// </summary>
+    [HttpPost("{id}/upload-avatar")]
+    public async Task<IActionResult> UploadAvatar(string id, IFormFile avatarFile)
+    {
+        var benutzer = await _userManager.FindByIdAsync(id);
+        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+
+        var (success, fileUrl, errorMessage) = await _fileStorage.UploadFileAsync(
+            avatarFile,
+            FileStorageService.AvatarsFolder,
+            id,
+            benutzer.Bild // Eski avatarı sil
+        );
+
+        if (!success)
+            return BadRequest(new { Nachricht = errorMessage });
+
+        // Yeni avatar URL'ini kaydet
+        benutzer.Bild = fileUrl!;
+        await _userManager.UpdateAsync(benutzer);
+
+        _logger.LogInformation("Benutzer Avatar yüklendi | BenutzerId: {Id}, Avatar: {Avatar}", id, fileUrl);
+        return Ok(new { Avatar = fileUrl, Nachricht = "Avatar başarıyla yüklendi." });
+    }
+
+    /// <summary>
+    /// Kullanıcı avatarını sil
+    /// </summary>
+    [HttpDelete("{id}/delete-avatar")]
+    public async Task<IActionResult> DeleteAvatar(string id)
+    {
+        var benutzer = await _userManager.FindByIdAsync(id);
+        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+
+        if (string.IsNullOrWhiteSpace(benutzer.Bild))
+            return BadRequest(new { Nachricht = "Avatar zaten mevcut değil." });
+
+        var success = await _fileStorage.DeleteFileAsync(benutzer.Bild);
+        if (!success)
+            return StatusCode(500, new { Nachricht = "Avatar silinirken bir hata oluştu." });
+
+        // DB'den avatar URL'ini temizle
+        benutzer.Bild = string.Empty;
+        await _userManager.UpdateAsync(benutzer);
+
+        _logger.LogInformation("Benutzer Avatar silindi | BenutzerId: {Id}", id);
+        return Ok(new { Nachricht = "Avatar başarıyla silindi." });
     }
 }
 
