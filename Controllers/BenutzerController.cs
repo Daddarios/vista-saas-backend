@@ -7,7 +7,7 @@ using Vista.Core.Services;
 namespace Vista.Core.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin,Manager")]
 [Route("api/[controller]")]
 public class BenutzerController : ControllerBase
 {
