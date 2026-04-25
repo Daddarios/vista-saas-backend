@@ -1,0 +1,749 @@
+# Vista — Master Plan (Aktarım Belgesi)
+
+> **KULLANIM TALİMATI:** Bu dosya her oturumda ilk okunacak belgedir.
+> Görev tamamlandıkça `[x]` işaretle ve **OTURUM DEVİR BLOKU**'nu güncelle.
+> Yeni AI oturumu başladığında sadece bu bloğu okuyarak kaldığı yerden devam eder.
+
+---
+
+## 🔴 OTURUM DEVİR BLOKU — HER ADIM SONRASI GÜNCELLE
+
+```
+SON TAMAMLANAN ADIM : FAZ 10 — ADIM 10.7
+TAMAMLANAN FAZ      : FAZ 1-10 — TÜM FAZLAR TAMAMLANDI ✅
+AKTİF ADIM          : —
+SONRAKİ ADIM        : —
+KALDIĞIMIZ DOSYA    : Vista.Core/Doc/Vista.Core plan V2
+NOTLAR              : Proje tamamlandı! Dockerfile, docker-compose, CI/CD, .gitignore, secrets. Frontend UI kullanıcı tarafından VS Code'da yapılacak.
+```
+
+> ⚠️ **Devir Teslim Mesajı (kopyala-yapıştır):**
+> *"crmsaas_plan.md dosyasını oku. OTURUM DEVİR BLOKU'na bak, kaldığın yerden devam et."*
+
+---
+
+## 📁 Referans Dosyalar
+
+| Dosya | İçerik |
+|-------|--------|
+| `Vista.Core_plan.md` | Bu dosya — master plan + ilerleme |
+| `on_ozet.md` | Legacy CrmAPP tam analizi (başvuru) |
+
+---
+
+## ✅ Kesinleşmiş Mimari
+
+```
+DB (SQL Server)
+    ↓
+EF Core 9 (Migrations)
+    ↓
+Model (Almanca entity — Kunde, Projekt, Ticket...)
+    ↓
+Controller (ControllerBase — CRUD → JSON döner, View YOK)
+    ↓
+REST API endpoint → React fetch eder → UI'da gösterir
+
+SignalR Hub → WebSocket → React'ta live chat / bildirim
+MailKit     → 2FA email
+Identity    → Auth + Rol
+```
+
+---
+
+## 🚀 Tech Stack (Kesinleşmiş)
+
+### Backend (.NET 9)
+
+| Paket | Sürüm | Amaç |
+|-------|-------|------|
+| `.NET` | **9.0** | Runtime |
+| `ASP.NET Core Web API` | 9.0 | REST Controller (ControllerBase) |
+| `EF Core` | **9.0** | ORM + Migration |
+| `EF Core SQL Server` | **9.0** | Provider |
+| `ASP.NET Core Identity` | 9.0 | Auth + Rol |
+| `SignalR` | 9.0 dahili | WebSocket (chat + bildirim) |
+| `MailKit` | **4.x** | SMTP + 2FA email |
+| `Serilog` | **4.x** | Loglama (konsol + dosya) |
+| `Serilog.Sinks.File` | **5.x** | Log dosyasına yaz |
+| `Serilog.Sinks.Console` | **5.x** | Konsola yaz |
+| `StackExchange.Redis` | **2.x** | 2FA kod cache |
+| `Microsoft.AspNetCore.Authentication.JwtBearer` | **9.x** | JWT doğrulama |
+| `Swashbuckle` | **6.x** | Swagger UI |
+| `xUnit` | **2.9.x** | Test |
+
+### Frontend (React)
+
+| Paket | Amaç |
+|-------|------|
+| `Vite + React` | SPA framework |
+| `Axios` | HTTP istekleri |
+| `@microsoft/signalr` | SignalR WebSocket client |
+| `React Router` | Sayfa yönlendirme |
+| `Bootstrap 5` | CSS |
+| `React Query` | API state yönetimi |
+
+---
+
+## 🏢 Multi-Tenancy
+
+- Her tabloda `MandantId` (Guid)
+- EF Core Global Query Filter → otomatik izolasyon
+- Tenant tespiti: subdomain (`firma1.crmsaas.com`) veya Header
+- SuperAdmin → filtre bypass
+
+---
+
+## 🌳 Proje Klasör/Dosya Ağacı
+
+```
+Vista/
+│
+├── backend/                              ← .NET 9 Web API
+│   ├── Vista.Core/
+│   │   │
+│   │   ├── Models/                       ← EF Core entity'ler (Almanca)
+│   │   │   ├── Base/
+│   │   │   │   ├── BasisEntity.cs        # Id(Guid), ErstelltAm, AktualisiertAm, IstGeloescht
+│   │   │   │   ├── MandantEntity.cs      # BasisEntity + MandantId
+│   │   │   │   └── PrufbareEntity.cs     # ErstelltVon, AktualisiertVon
+│   │   │   ├── Mandant.cs
+│   │   │   ├── Benutzer.cs               # IdentityUser extend
+│   │   │   ├── Kunde.cs
+│   │   │   ├── Ansprechpartner.cs
+│   │   │   ├── Projekt.cs
+│   │   │   ├── Bericht.cs
+│   │   │   ├── Ticket.cs
+│   │   │   ├── TicketNachricht.cs
+│   │   │   ├── ChatNachricht.cs
+│   │   │   ├── ChatRaum.cs
+│   │   │   ├── Abonnement.cs             # Abonelik planı (Taslak)
+│   │   │   ├── Zahlung.cs                # Ödeme/IBAN kaydı (Taslak)
+│   │   │   └── Rechnung.cs               # Fatura (Taslak)
+│   │   │
+│   │   ├── Enums/
+│   │   │   ├── BenutzerRolle.cs          # SuperAdmin,Admin,Manager,Standard,NurLesen
+│   │   │   ├── TicketStatus.cs           # Offen,InBearbeitung,Geloest,Geschlossen
+│   │   │   ├── TicketPrioritaet.cs       # Niedrig,Mittel,Hoch,Kritisch
+│   │   │   └── ProjektStatus.cs          # NichtGestartet,InBearbeitung,Abgeschlossen,Pausiert
+│   │   │
+│   │   ├── Data/
+│   │   │   ├── AppDbContext.cs           # EF Core DbContext + Global Tenant Filter
+│   │   │   ├── Configurations/           # IEntityTypeConfiguration<T> dosyaları
+│   │   │   │   ├── KundeConfiguration.cs
+│   │   │   │   ├── ProjektConfiguration.cs
+│   │   │   │   ├── TicketConfiguration.cs
+│   │   │   │   └── ...
+│   │   │   ├── Migrations/               # dotnet ef migrations add
+│   │   │   └── DataSeeder.cs             # Demo veri
+│   │   │
+│   │   ├── Controllers/                  ← Tümü ControllerBase — JSON döner
+│   │   │   ├── AuthController.cs         # Login, VerifyCode, Logout, RefreshToken
+│   │   │   ├── KundeController.cs        # CRUD
+│   │   │   ├── AnsprechpartnerController.cs
+│   │   │   ├── ProjektController.cs      # CRUD + personel atama
+│   │   │   ├── BerichtController.cs      # Dosya upload/download
+│   │   │   ├── TicketController.cs       # CRUD + durum değiştirme
+│   │   │   ├── TicketNachrichtController.cs
+│   │   │   ├── ChatController.cs         # ChatHistory
+│   │   │   ├── BenutzerController.cs     # Kullanıcı yönetimi
+│   │   │   ├── DashboardController.cs    # İstatistik endpoint'leri
+│   │   │   ├── AbonnementController.cs   # Abonelik planları (Taslak)
+│   │   │   └── ZahlungController.cs      # Ödeme onay/log (Taslak)
+│   │   │
+│   │   ├── Hubs/
+│   │   │   ├── ChatHub.cs                # SignalR — live chat
+│   │   │   └── BenachrichtigungHub.cs    # Ticket + proje anlık bildirim
+│   │   │
+│   │   ├── Services/
+│   │   │   ├── EmailService.cs           # MailKit 4.x
+│   │   │   ├── ZweiFaktorService.cs      # Redis cache kod üret/doğrula
+│   │   │   ├── DateiService.cs           # Dosya upload/storage
+│   │   │   └── MandantService.cs         # TenantId resolve
+│   │   │
+│   │   ├── DTOs/                         ← Request/Response modelleri
+│   │   │   ├── Auth/LoginDto.cs
+│   │   │   ├── Auth/VerifyCodeDto.cs
+│   │   │   ├── Kunde/KundeDto.cs
+│   │   │   ├── Projekt/ProjektDto.cs
+│   │   │   └── Ticket/TicketDto.cs
+│   │   │
+│   │   ├── appsettings.json
+│   │   ├── appsettings.Development.json
+│   │   └── Program.cs
+│   │
+│   ├── Logs/                             ← Serilog log dosyaları (otomatik oluşur)
+│   │   ├── log-2026-04-16.txt            # Günlük log (tarihli)
+│   │   ├── log-error-2026-04-16.txt      # Sadece hata logları
+│   │   └── .gitignore                    # Loglar git'e gitmez
+│   │
+│   ├── Storage/                          ← Resim + dosya depolama
+│   │   ├── benutzer/                     # Personel profil resimleri
+│   │   │   └── {BenutzerID}/profil.jpg
+│   │   ├── kunden/                       # Müşteri logoları
+│   │   │   └── {KundeID}/logo.png
+│   │   ├── berichte/                     # Rapor / döküman dosyaları
+│   │   │   └── {BerichtID}/dosya.pdf
+│   │   └── .gitignore                    # Dosyalar git'e gitmez
+│   │
+│   └── Vista.Tests/
+│       ├── ControllerTests/
+│       └── ServiceTests/
+│
+├── frontend/                             ← Vite + React
+│   ├── src/
+│   │   ├── api/                          # Axios instance + endpoint fonksiyonları
+│   │   │   ├── axiosClient.js
+│   │   │   ├── kundeApi.js
+│   │   │   ├── projektApi.js
+│   │   │   └── ticketApi.js
+│   │   ├── components/
+│   │   │   ├── shared/
+│   │   │   │   ├── DataTable.jsx
+│   │   │   │   ├── Modal.jsx
+│   │   │   │   └── StatusBadge.jsx
+│   │   │   ├── chat/
+│   │   │   │   ├── ChatFenster.jsx
+│   │   │   │   └── NachrichtBlase.jsx
+│   │   │   └── ticket/
+│   │   │       ├── TicketKarte.jsx
+│   │   │       └── TicketZeitleiste.jsx
+│   │   ├── pages/
+│   │   │   ├── Login.jsx
+│   │   │   ├── ZweiFaktor.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Kunden.jsx
+│   │   │   ├── Projekte.jsx
+│   │   │   ├── Tickets.jsx
+│   │   │   ├── Chat.jsx
+│   │   │   └── Admin.jsx
+│   │   ├── hooks/
+│   │   │   ├── useAuth.js
+│   │   │   └── useSignalR.js            # SignalR bağlantı hook
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
+│
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml               # API + SQL Server + Redis
+│
+└── Vista.sln
+```
+
+---
+
+## 🇩🇪 Almanca Adlandırma Kuralı
+
+> **KURAL:** Model sınıf adları + property adları Almanca.
+> Controller, Service, DTO, Hub isimleri İngilizce kalabilir (teknik katman).
+
+### Entity → Property Tablosu
+
+| Entity | Property'ler |
+|--------|-------------|
+| `BasisEntity` | `Id`(Guid), `ErstelltAm`, `AktualisiertAm`, `IstGeloescht` |
+| `MandantEntity` | + `MandantId` |
+| `PrufbareEntity` | + `ErstelltVon`, `AktualisiertVon` |
+| `Mandant` | `Name`, `Domain`, `IstAktiv` |
+| `Benutzer` | `Vorname`, `Nachname`, `Email`, `RufNummer`, `Abteilung`, `Rolle`, `Bild`, `Hinweise` |
+| `Kunde` | `Unternehmen`, `Vorname`, `Nachname`, `Email`, `TelefonMobil`, `TelefonHaus`, `Adresse`, `Website`, `Logo`, `Hinweise` |
+| `Ansprechpartner` | `Name`, `Telefon`, `Email`, `Abteilung`, `KundeId` |
+| `Projekt` | `Name`, `Beschreibung`, `Startdatum`, `Enddatum`, `Status`, `Prioritaet`, `AbschlussInProzent`, `IstAbgeschlossen` |
+| `Bericht` | `Titel`, `DateiPfad`, `DateiTyp`, `Version`, `HochgeladenAm`, `BearbeitetAm` |
+| `Ticket` | `Titel`, `Beschreibung`, `Status`, `Prioritaet`, `Kategorie`, `ZugewiesenAnId`, `KundeId`, `ProjektId`, `Faelligkeitsdatum` |
+| `TicketNachricht` | `TicketId`, `AbsenderId`, `Inhalt`, `IstInternNotiz`, `GeschicktAm` |
+| `ChatNachricht` | `RaumId`, `AbsenderId`, `Inhalt`, `GeschicktAm` |
+| `ChatRaum` | `Name`, `ProjektId`, `TicketId` |
+| `Abonnement` | `MandantId`, `PlanName`, `Preis`, `StartDatum`, `EndDatum`, `IstAktiv` |
+| `Zahlung` | `MandantId`, `Betrag`, `ZahlungsDatum`, `Status`, `TransaktionId`, `IBAN` |
+| `Rechnung` | `MandantId`, `Nummer`, `PdfPfad`, `Status` |
+
+### Enum Değerleri
+
+```csharp
+enum BenutzerRolle    { SuperAdmin, Admin, Manager, Standard, NurLesen }
+enum TicketStatus     { Offen, InBearbeitung, Geloest, Geschlossen }
+enum TicketPrioritaet { Niedrig, Mittel, Hoch, Kritisch }
+enum ZahlungStatus    { Ausstehend, Abgeschlossen, Fehlgeschlagen }
+enum ProjektStatus    { NichtGestartet, InBearbeitung, Abgeschlossen, Pausiert }
+```
+
+---
+
+## 🔐 Auth / 2FA Akışı
+
+```
+1. POST /api/auth/login      → Email + Passwort → Identity PasswordHasher doğrular
+                               (BCrypt'e gerek yok — Identity kendi PBKDF2 hash'ini kullanır)
+2. Doğruysa                  → 6 haneli kod üret → Redis (5 dk TTL)
+3. MailKit                   → HTML email gönder
+4. POST /api/auth/verify     → Kodu doğrula → JWT + RefreshToken (DB'ye kaydet)
+5. React                     → JWT → httpOnly Cookie (Production standartı, XSS'e karşı güvenli)
+6. Her istek                 → Authorization: Bearer <token>
+7. SignalR                   → JWT ile authenticate
+8. RefreshToken              → Rotation uygula (her kullanımda yeni token üret, eskiyi iptal et)
+```
+
+---
+
+## 💬 Controller Örneği
+
+```csharp
+[ApiController]
+[Authorize]
+[Route("api/[controller]")]
+public class KundeController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    public KundeController(AppDbContext db) => _db = db;
+
+    [HttpGet]
+    public async Task<ActionResult<List<Kunde>>> GetAll()
+        => Ok(await _db.Kunden.ToListAsync());
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Kunde>> GetById(Guid id)
+    {
+        var kunde = await _db.Kunden.FindAsync(id);
+        return kunde is null ? NotFound() : Ok(kunde);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Create(Kunde model)
+    {
+        _db.Kunden.Add(model);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetById), new { id = model.Id }, model);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult> Update(Guid id, Kunde model) { ... }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(Guid id) { ... }
+}
+```
+
+---
+
+## 📝 Log Sistemi (Serilog)
+
+### Yapılandırma (Program.cs)
+
+```csharp
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "Logs/log-.txt",
+        rollingInterval: RollingInterval.Day,       // Her gün yeni dosya: log-20260416.txt
+        restrictedToMinimumLevel: LogEventLevel.Information
+    )
+    .WriteTo.File(
+        path: "Logs/log-error-.txt",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Error // Sadece hata log dosyası
+    )
+    .CreateLogger();
+```
+
+### Log Çıktısı Örneği
+
+```
+[2026-04-16 23:05:12 ERR] KundeController.Delete | Id: abc-123 | Hata: FK constraint violation
+[2026-04-16 23:05:15 INF] BenutzerController.Create | Yeni kullanıcı: max@firma.de
+[2026-04-16 23:05:18 WRN] ZweiFaktorService.Verify | Kod süresi dolmuş | Email: test@test.de
+```
+
+### Controller'da Kullanım
+
+```csharp
+public class KundeController : ControllerBase
+{
+    private readonly ILogger<KundeController> _logger;
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(Guid id)
+    {
+        try
+        {
+            var kunde = await _db.Kunden.FindAsync(id);
+            if (kunde is null)
+            {
+                _logger.LogWarning("Kunde bulunamadı | Id: {Id}", id);
+                return NotFound();
+            }
+            _db.Kunden.Remove(kunde);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Kunde silindi | Id: {Id}", id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Kunde silinemedi | Id: {Id} | Sınıf: KundeController | Metod: Delete", id);
+            return StatusCode(500, "Sunucu hatası");
+        }
+    }
+}
+```
+
+> **Log dosyaları:** `Logs/` klasöründe, günlük olarak tarih ekiyle oluşur.
+> `Logs/` klasörü `.gitignore`'a eklenir — git'e gitmez.
+
+---
+
+## 🗂️ Dosya Yönetimi (Senkronize CRUD)
+
+### Klasör Yapısı
+
+```
+Storage/
+├── benutzer/{BenutzerID}/profil.jpg     ← Personel profil resmi
+├── kunden/{KundeID}/logo.png            ← Müşteri logosu
+└── berichte/{BerichtID}/dosya.pdf       ← Rapor dosyası
+```
+
+### Kural: Kayıt silinince dosya da silinir
+
+```csharp
+// DateiService.cs
+public class DateiService
+{
+    private readonly IWebHostEnvironment _env;
+    private readonly ILogger<DateiService> _logger;
+
+    // Dosya yükle — klasörü otomatik oluşturur
+    public async Task<string> HochladenAsync(IFormFile datei, string ordner, Guid entityId)
+    {
+        var pfad = Path.Combine(_env.ContentRootPath, "Storage", ordner, entityId.ToString());
+        Directory.CreateDirectory(pfad);
+        var dateiPfad = Path.Combine(pfad, datei.FileName);
+        using var stream = File.Create(dateiPfad);
+        await datei.CopyToAsync(stream);
+        _logger.LogInformation("Dosya yüklendi | {Pfad}", dateiPfad);
+        return dateiPfad;
+    }
+
+    // Kayıt silinince klasörü tamamen sil
+    public void OrdnerLoeschen(string ordner, Guid entityId)
+    {
+        var pfad = Path.Combine(_env.ContentRootPath, "Storage", ordner, entityId.ToString());
+        if (Directory.Exists(pfad))
+        {
+            Directory.Delete(pfad, recursive: true); // Alt dosyalarla birlikte
+            _logger.LogInformation("Klasör silindi | {Pfad}", pfad);
+        }
+    }
+}
+```
+
+### Controller'da Entegrasyon
+
+```csharp
+[HttpDelete("{id}")]
+public async Task<ActionResult> DeleteKunde(Guid id)
+{
+    var kunde = await _db.Kunden.FindAsync(id);
+    if (kunde is null) return NotFound();
+
+    // 1. DB'den sil
+    _db.Kunden.Remove(kunde);
+    await _db.SaveChangesAsync();
+
+    // 2. Storage klasörünü sil (logo + dosyalar)
+    _dateiService.OrdnerLoeschen("kunden", id);
+
+    _logger.LogInformation("Kunde + dosyalar silindi | Id: {Id}", id);
+    return NoContent();
+}
+```
+
+> **Eski hata (Legacy CrmAPP):** Müşteri DB'den siliniyordu ama `logo.png` klasörde kalıyordu.
+> **Yeni davranış:** DB silme + klasör silme atomik olarak yapılır.
+
+---
+
+## ⚙️ Program.cs Yapısı
+
+```csharp
+// DB
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+// Identity
+builder.Services.AddIdentity<Benutzer, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>();
+
+// JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(...);
+
+// SignalR
+builder.Services.AddSignalR();
+
+// Redis
+builder.Services.AddStackExchangeRedisCache(...);
+
+// Services
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<ZweiFaktorService>();
+builder.Services.AddScoped<DateiService>();      // Dosya yönetimi
+// Serilog
+builder.Host.UseSerilog();
+
+// CORS (React için)
+builder.Services.AddCors(opt => opt.AddPolicy("ReactApp",
+    p => p.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
+
+// Swagger
+builder.Services.AddSwaggerGen();
+
+// ---
+app.UseCors("ReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<BenachrichtigungHub>("/hubs/benachrichtigung");
+app.UseSwagger();
+app.UseSwaggerUI();
+```
+
+---
+
+## 📋 Migration Akışı
+
+```bash
+dotnet ef migrations add InitialCreate --project Vista.Core
+dotnet ef database update --project Vista.Core
+
+# Model değişikliğinde:
+dotnet ef migrations add <AciklamaAdı> --project Vista.Core
+dotnet ef database update --project Vista.Core
+```
+
+---
+
+## 🗺️ UYGULAMA AŞAMALARI
+
+> **Kural:** Adım biter → `[ ]` → `[x]` → OTURUM DEVİR BLOKU güncelle.
+
+---
+
+### FAZ 1 — Proje Kurulumu
+
+- [x] **1.1** Solution + proje oluştur: `dotnet new webapi -n Vista.Core`
+- [x] **1.2** NuGet paketlerini yükle (EF Core, Identity, SignalR, MailKit, Redis, Swagger, JwtBearer)
+- [x] **1.3** Serilog konfigürasyonu (konsol + dosya sink, günlük dosya açılışı)
+- [x] **1.4** `appsettings.json` yapılandır (ConnectionString, JWT, SMTP, Redis)
+- [x] **1.5** CORS ayarla (React `localhost:5173`)
+- [x] **1.6** Swagger aktifleştir
+- [x] **1.7** `Logs/` ve `Storage/` klasörlerini oluştur + `.gitignore`'a ekle
+
+---
+
+### FAZ 2 — Model & Database
+
+- [x] **2.1** `BasisEntity`, `MandantEntity`, `PrufbareEntity` yaz
+- [x] **2.2** `Mandant.cs` entity
+- [x] **2.3** `Benutzer.cs` (IdentityUser extend — Identity kendi PasswordHasher'ini kullanır)
+- [x] **2.4** `Kunde.cs` + `Ansprechpartner.cs`
+- [x] **2.5** `Projekt.cs`
+- [x] **2.6** `Bericht.cs`
+- [x] **2.7** `Ticket.cs` + `TicketNachricht.cs`
+- [x] **2.8** `ChatNachricht.cs` + `ChatRaum.cs`
+- [x] **2.9** Enum'ları tanımla
+- [x] **2.10** `AppDbContext.cs` (DbSet'ler + Global Tenant Filter)
+- [x] **2.11** Fluent API konfigürasyonları (N:N ilişkiler, FK'lar)
+- [x] **2.12** DTO sınıfları yaz (Request/Response ayrımı) ← önce alındı
+- [x] **2.13** FluentValidation kuralları (zorunlu alan, max uzunluk, email format)
+- [x] **2.14** Pagination yapısı: `PagedResult<T>` generic response modeli
+- [x] **2.15** İlk Migration: `InitialCreate`
+- [x] **2.16** `DataSeeder.cs` (demo veri)
+
+---
+
+### FAZ 3 — Auth Sistemi
+
+- [x] **3.1** Identity konfigürasyonu (Program.cs) — `PasswordHasher` aktif (BCrypt'e gerek yok)
+- [x] **3.2** Global Exception Middleware yaz (`ExceptionMiddleware.cs`) — tüm hata cevapları standart JSON
+- [x] **3.3** JWT + RefreshToken servisi
+- [x] **3.4** RefreshToken rotation: her kullanımda eski token iptal, yenişi üret (DB'de `IsRevoked` kolonu)
+- [x] **3.5** `ZweiFaktorService` (Redis ile 6 haneli kod)
+- [x] **3.6** `EmailService` (MailKit 4.x, HTML template)
+- [x] **3.7** `AuthController` (Login, VerifyCode, Logout, Refresh)
+- [x] **3.8** Lockout (3 başarısız deneme → hesap kilitleme)
+- [x] **3.9** Rol bazlı yetkilendirme (`[Authorize(Roles="Admin")]`) + Rol seed (DataSeeder)
+- [x] **3.10** Token saklama: **httpOnly Cookie** (API tarafında cookie set edilecek, React ile güvenli iletişim)
+
+---
+
+### FAZ 4 — Core CRUD Controller'lar
+
+- [x] **4.1** `KundeController` (GET all, GET by id, POST, PUT, DELETE + pagination + search)
+- [x] **4.2** `AnsprechpartnerController` (CRUD + Kunde bazlı listeleme)
+- [x] **4.3** `ProjektController` (CRUD + personel atama endpoint'i)
+- [x] **4.4** `BenutzerController` (kullanıcı yönetimi + rol atama — Admin/SuperAdmin)
+- [x] **4.5** `BerichtController` (dosya upload/download + Storage klasör yönetimi)
+- [x] **4.6** `DashboardController` (istatistik: müşteri/proje/ticket sayıları + gruplamalar)
+- [x] **4.7** `DateiService` entegrasyonu (BerichtController'da silme → klasör silme)
+- [x] **4.8** Tüm controller'larda `_logger.LogInformation/LogError` eklendi
+- [x] **4.9** Soft-delete (`IstGeloescht = true`) tüm CRUD controller'larda uygulandı
+
+---
+
+### FAZ 5 — Ticket Sistemi
+
+- [x] **5.1** `TicketController` (CRUD + durum değiştirme + filtreleme + pagination)
+- [x] **5.2** `TicketNachrichtController` (mesaj ekle, listele + intern notiz desteği)
+- [x] **5.3** Durum değişikliği → MailKit email bildirimi (HTML template)
+- [x] **5.4** `BenachrichtigungHub` (SignalR) → ticket güncellemesi anlık push
+
+---
+
+### FAZ 6 — Live Chat (SignalR)
+
+- [x] **6.1** `ChatHub.cs` (JoinRoom, SendMessage, Typing, OnConnected/Disconnected)
+- [x] **6.2** `ChatController` (GET geçmiş mesajlar + oda listesi)
+- [x] **6.3** ChatNachricht → DB'ye kayıt (her mesaj kalıcı)
+- [x] **6.4** Tenant bazlı online kullanıcı listesi
+> 📌 **NOT:** Dosya/resim paylaşımı (ChatNachricht'e DateiPfad + DateiTyp + ChatHub.SendFile) sonradan eklenecek. Migration gerektirir.
+> 📌 **NOT:** Chat üzerinden dosya gönder/indir özelliği eklenecek (DateiService entegrasyonu + ChatHub.SendFile + React tarafı upload/download UI).
+
+---
+
+### FAZ 7 — Ödeme ve Abonelik (Taslak Modül)
+
+> ⚠️ **DURUM:** Bu modül sadece **TASLAK** olarak projede yer alacak. Gerçek ödeme entegrasyonu (Stripe/Iyzico), vergi numarası, şirket bilgileri vs. şu an mevcut değil. Entity + basit CRUD endpoint'leri oluşturulacak, ileride talep gelirse geliştirici (sen) bunu kendi başına tamamlayacak.
+
+- [x] **7.1** `Abonnement`, `Zahlung`, `Rechnung` entity'lerini oluştur
+- [x] **7.2** `AppDbContext.cs`'e ekle ve Migration al
+- [x] **7.3** `AbonnementController` (Plan seçimi endpoint'leri)
+- [x] **7.4** `ZahlungController` (Banka IBAN bilgisi onay/loglama - prototip)
+- [x] **7.5** İhtiyaç halinde Stripe/Iyzico altyapısını buraya entegre et (Opsiyonel)
+
+---
+
+### FAZ 8 — React Frontend
+
+- [x] **8.1** `npm create vite@latest frontend -- --template react`
+- [x] **8.2** Axios + axiosClient.js (base URL + token header)
+- [x] **8.3** React Router kurulumu (sayfa yapısı)
+- [x] **8.4** Login + 2FA sayfaları
+- [x] **8.5** Dashboard sayfası (API'den istatistik çek)
+- [x] **8.6** Kunden sayfaları (list, create, detail)
+- [x] **8.7** Projekt sayfaları
+- [x] **8.8** Ticket sayfaları (list, create, detail + timeline)
+- [x] **8.9** Chat sayfası (`@microsoft/signalr` ile)
+- [x] **8.10** Bootstrap 5 stillemesi
+
+---
+
+### FAZ 9 — Test & Polish
+
+- [x] **9.1** Controller unit testleri (xUnit)
+- [x] **9.2** Auth flow testi (2FA dahil)
+- [x] **9.3** Swagger UI kontrolü (tüm endpoint'ler dokümanlı)
+
+---
+
+### FAZ 10 — Deployment
+
+- [x] **10.1** `Dockerfile` (backend)
+- [x] **10.2** `docker-compose.yml` (API + SQL Server + Redis)
+- [x] **10.3** React production build (`npm run build`)
+- [x] **10.4** CORS → production domain güncelle
+- [x] **10.5** Secrets → Environment Variables (`.env.example` + `appsettings.Production.json`)
+- [x] **10.6** `.gitignore` kontrol: `Logs/`, `Storage/`, `appsettings.Development.json` git'e gitmiyor
+- [x] **10.7** GitHub Actions CI/CD pipeline (otomatik test, build ve deployment)
+
+---
+
+## 🔑 Önemli Kararlar (Değişmez)
+
+| Karar | Seçim |
+|-------|-------|
+| Backend | .NET 9 ASP.NET Core Web API |
+| .NET sürüm | 9.0 STS — 2 yıl destek |
+| Frontend | Vite + React |
+| View | ❌ YOK — tümü JSON |
+| CSS | Bootstrap 5 |
+| ORM | EF Core 9 |
+| Auth | ASP.NET Core Identity (kendi PasswordHasher'i — BCrypt ayrıca gerekmez) |
+| Token | JWT + RefreshToken rotation |
+| Token saklama | httpOnly Cookie (Tek geçerli yöntem) |
+| 2FA | MailKit + Redis |
+| Real-time | SignalR WebSocket |
+| Pattern | Controller → DbContext → DB (sade, performanslı) |
+| Exception | Global ExceptionMiddleware — standart hata JSON |
+| CQRS/MediatR | ❌ YOK |
+| Repository | ❌ YOK |
+| Blazor | ❌ YOK |
+| Model dili | Almanca (property + sınıf adı) |
+| Migration | Manuel (`dotnet ef migrations add`) |
+
+---
+
+*Oluşturulma: 2026-04-16 | FAZ 1 ADIM 1.1'den başla*
+
+---
+
+## 📋 YAPILACAK İŞLER RAPORU
+
+> **Tarih:** 2026-04-18 | Tüm fazlar (1-10) tamamlandı.
+
+### 🎨 1. Frontend UI (FAZ 8 — VS Code'da kullanıcı yapacak)
+- `react_plan.md`'deki API tablosunu rehber olarak kullan
+- Login, Dashboard, Kunden, Projekte, Tickets, Chat sayfalarının UI/UX tasarımı
+- Bootstrap 5 özelleştirme (animasyonlar, renkler, gölgeler)
+- `frontend/` klasöründeki referans kodları kullanabilir veya sıfırdan yazabilirsin
+
+### 📎 2. Chat Dosya Paylaşımı (FAZ 6 notu)
+- `ChatNachricht`'e `DateiPfad` + `DateiTyp` property ekle
+- `ChatHub.SendFile` metodu yaz
+- Migration al
+- React tarafında upload/download UI
+
+### 💳 3. Ödeme Modülü Tamamlama (FAZ 7 — firma kurulunca)
+- Gerçek ödeme gateway (Stripe/Iyzico) entegrasyonu
+- Vergi numarası, şirket bilgileri
+- Fatura PDF oluşturma
+
+### 🚀 4. Gerçek Deployment
+- Domain + hosting satın al
+- `docker-compose up` ile sunucuya deploy
+- `.env` dosyasını gerçek değerlerle doldur
+- CORS'u production domain'e güncelle
+- SSL sertifikası (Let's Encrypt)
+
+### 📦 5. GitHub
+- Projeyi commit + push (`git push origin main`)
+- GitHub Actions CI/CD otomatik çalışacak
+- Repo: `https://github.com/Daddarios/vista-saas-backend`
+
+
+### Senin bilgisayarın (localhost)
+│
+├── Docker Desktop
+│   ├── vistacore-api-1       → localhost:8080  (Backend API - Production)
+│   ├── vistacore-sqlserver-1 → localhost:1433  (SQL Server)
+│   └── vistacore-redis-1    → localhost:6379  (Redis)
+│
+├── Visual Studio 2026       → localhost:5188  (Backend API - Development, F5 ile)
+├── VS Code                  → localhost:5173  (Frontend React)
+│
+└── Kaynak kod → C:\Users\onurg\source\repos\Vista.Core\  (bu değişmedi)
+
+
+
+###COCKER 
+  
+  
+  Kullanıcı → Frontend (React) → API → SQL Server (kalıcı veri)
+                                  → Redis (geçici 2FA kodu)
+DOCKER 3 Containers
+🔵 API	Senin yazdığın Vista.Core backend	Tüm iş mantığı burada — login, müşteri CRUD, ticket, chat, dosya yükleme. Frontend bununla konuşuyor
+🟢  SQL Server	Veritabanı	Tüm veriler burada saklanıyor — kullanıcılar, müşteriler, projeler, ticketlar, mesajlar
+🔴 Redis	Geçici hafıza (cache)	Sadece 2FA kodlarını 5 dakikalığına tutuyor. Hızlı, uçucu — sunucu kapanınca silinir
