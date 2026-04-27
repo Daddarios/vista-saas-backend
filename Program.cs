@@ -89,8 +89,18 @@ builder.Services.AddSignalR();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestDtoValidator>();
 builder.Services.AddSwaggerGen();
-builder.Services.AddCors(opt => opt.AddPolicy("ReactApp",
-    p => p.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader().AllowCredentials()));
+
+// CORS: Frontend IP'lerine izin ver (güvenli whitelist)
+builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", policy =>
+{
+    policy.WithOrigins(
+        "http://localhost:5173",      // Local development
+        "http://192.168.0.45:5173"    // Network üzerinden erişim (telefon/başka PC)
+    )
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials();
+}));
 
 var app = builder.Build();
 
@@ -117,7 +127,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
-app.UseCors("ReactApp");
+app.UseCors("AllowFrontend");
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseAuthentication();
