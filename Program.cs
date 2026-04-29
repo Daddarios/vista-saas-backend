@@ -5,10 +5,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.SemanticKernel;
+using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.AI.Ollama;
 using Vista.Core.Data;
 using Vista.Core.Middleware;
 using Vista.Core.Models;
 using Vista.Core.Services;
+using Vista.Core.Services.ChatBot;
+using Vista.Core.Plugins;
 using Vista.Core.Validators.Auth;
 using Serilog;
 using Serilog.Events;
@@ -84,6 +89,41 @@ builder.Services.AddScoped<ZweiFaktorService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<FileStorageService>();
 
+// VIKA ChatBot — Semantic Kernel + Ollama (Phi-4 Mini)
+var ollamaEndpoint = builder.Configuration["Vika:OllamaEndpoint"] ?? "http://localhost:11434";
+var ollamaModel = builder.Configuration["Vika:Model"] ?? "phi4-mini";
+
+var kernelBuilder = Kernel.CreateBuilder();
+#pragma warning disable SKEXP0070
+kernelBuilder.AddOllamaChatCompletion(ollamaModel, new Uri(ollamaEndpoint));
+#pragma warning restore SKEXP0070
+var kernel = kernelBuilder.Build();
+
+builder.Services.AddSingleton(kernel);
+builder.Services.AddSingleton(kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
+
+// Kernel Memory (RAG)
+var qdrantEndpoint = builder.Configuration["Vika:QdrantEndpoint"] ?? "http://localhost:6333";
+var memory = new KernelMemoryBuilder()
+    .WithOllamaTextEmbeddingGeneration(new OllamaConfig
+    {
+        Endpoint = ollamaEndpoint,
+        TextModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
+    })
+    .WithQdrantMemoryDb(qdrantEndpoint)
+    .Build<MemoryServerless>();
+
+builder.Services.AddSingleton<IKernelMemory>(memory);
+
+builder.Services.AddSingleton<ChatInputFilter>();
+builder.Services.AddSingleton<ChatOutputFilter>();
+builder.Services.AddScoped<ChatRateLimiter>();
+builder.Services.AddScoped<VikaChatBotService>();
+builder.Services.AddScoped<DataIngestionService>();
+builder.Services.AddScoped<KundePlugin>();
+builder.Services.AddScoped<TicketPlugin>();
+builder.Services.AddScoped<ProjektPlugin>();
+
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddFluentValidationAutoValidation();
@@ -135,5 +175,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<Vista.Core.Hubs.BenachrichtigungHub>("/hubs/benachrichtigung");
 app.MapHub<Vista.Core.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<Vista.Core.Hubs.VikaChatBotHub>("/hubs/vika");
 
 app.Run();

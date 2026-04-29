@@ -103,7 +103,19 @@ public class AuthController : ControllerBase
 
         var mandant = await _db.Mandanten.FirstOrDefaultAsync(m => m.IstAktiv && !m.IstGeloescht);
 
-        return Ok(new { Nachricht = "Erfolgreich angemeldet.", tokens.AccessTokenAblauf, MandantId = mandant?.Id });
+        // Token'ı response'da döndür (IP/mobil erişim için)
+        return Ok(new 
+        { 
+            Nachricht = "Erfolgreich angemeldet.", 
+            AccessToken = tokens.AccessToken,
+            RefreshToken = tokens.RefreshToken,
+            AccessTokenAblauf = tokens.AccessTokenAblauf,
+            Email = benutzer.Email,
+            MandantId = mandant?.Id,
+            Rolle = benutzer.Rolle,
+            Vorname = benutzer.Vorname,
+            Nachname = benutzer.Nachname
+        });
     }
 
     /// <summary>
@@ -122,7 +134,14 @@ public class AuthController : ControllerBase
 
         SetTokenCookies(tokens);
 
-        return Ok(new { Nachricht = "Token erfolgreich erneuert.", tokens.AccessTokenAblauf });
+        // Token'ı response'da da döndür
+        return Ok(new 
+        { 
+            Nachricht = "Token erfolgreich erneuert.", 
+            AccessToken = tokens.AccessToken,
+            RefreshToken = tokens.RefreshToken,
+            AccessTokenAblauf = tokens.AccessTokenAblauf
+        });
     }
 
     /// <summary>
