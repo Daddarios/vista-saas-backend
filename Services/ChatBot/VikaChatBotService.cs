@@ -151,18 +151,34 @@ public class VikaChatBotService
             }
         };
 
+        var enumerator = _chat.GetStreamingChatMessageContentsAsync(chatHistory, settings, kernelMitPlugins).GetAsyncEnumerator();
+        bool hasError = false;
         try
         {
-            await foreach (var chunk in _chat.GetStreamingChatMessageContentsAsync(
-                chatHistory, settings, kernelMitPlugins))
+            while (true)
             {
-                if (!string.IsNullOrEmpty(chunk.Content))
-                    yield return chunk.Content;
+                string? content = null;
+                try
+                {
+                    if (!await enumerator.MoveNextAsync()) break;
+                    content = enumerator.Current.Content;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "VIKA | Stream Fehler");
+                    hasError = true;
+                    break;
+                }
+                if (!string.IsNullOrEmpty(content)) yield return content!;
             }
         }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogError(ex, "VIKA | Stream Fehler");
+            await enumerator.DisposeAsync();
+        }
+
+        if (hasError)
+        {
             yield return "\n[Bağlantı veya model hatası oluştu, lütfen tekrar deneyin.]";
         }
     }

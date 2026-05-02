@@ -21,7 +21,7 @@ public class EmailService
             <html>
             <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 30px;'>
                 <div style='max-width: 500px; margin: auto; background: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #2c3e50; text-align: center;'>Vista CRM</h2>
+                    <h2 style='color: #2c3e50; text-align: center;'>Vista Core</h2>
                     <p style='font-size: 16px; color: #333;'>Ihr Bestätigungscode lautet:</p>
                     <div style='text-align: center; margin: 20px 0;'>
                         <span style='font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #2980b9; background: #ecf0f1; padding: 12px 24px; border-radius: 6px;'>{code}</span>
@@ -43,7 +43,7 @@ public class EmailService
             <html>
             <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 30px;'>
                 <div style='max-width: 500px; margin: auto; background: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #2c3e50; text-align: center;'>Vista CRM</h2>
+                    <h2 style='color: #2c3e50; text-align: center;'>Vista Core</h2>
                     <p style='font-size: 16px; color: #333;'>Der Status des Tickets <strong>{ticketTitel}</strong> wurde geändert:</p>
                     <div style='text-align: center; margin: 20px 0;'>
                         <span style='color: #e74c3c; font-weight: bold;'>{alterStatus}</span>
@@ -64,7 +64,7 @@ public class EmailService
         var smtp = _configuration.GetSection("SmtpSettings");
 
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("Vista CRM", smtp["User"]));
+        message.From.Add(new MailboxAddress("Vista Core", smtp["User"] ?? ""));
         message.To.Add(MailboxAddress.Parse(empfaengerEmail));
         message.Subject = betreff;
         message.Body = new TextPart("html") { Text = htmlInhalt };
@@ -72,8 +72,8 @@ public class EmailService
         using var client = new SmtpClient();
         try
         {
-            await client.ConnectAsync(smtp["Host"], int.Parse(smtp["Port"]!), MailKit.Security.SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtp["User"], smtp["Pass"]);
+            await client.ConnectAsync(smtp["Host"] ?? "", int.Parse(smtp["Port"] ?? "587"), MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtp["User"] ?? "", smtp["Pass"] ?? "");
             await client.SendAsync(message);
             _logger.LogInformation("E-Mail an {Email} gesendet", empfaengerEmail);
         }
