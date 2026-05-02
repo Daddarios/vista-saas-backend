@@ -63,8 +63,13 @@ public class EmailService
     {
         var smtp = _configuration.GetSection("SmtpSettings");
 
+        var smtpUser = smtp["User"] ?? throw new InvalidOperationException("SMTP User is not configured");
+        var smtpHost = smtp["Host"] ?? throw new InvalidOperationException("SMTP Host is not configured");
+        var smtpPass = smtp["Pass"] ?? throw new InvalidOperationException("SMTP Pass is not configured");
+        var smtpPort = int.Parse(smtp["Port"] ?? "587");
+
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("Vista Core", smtp["User"] ?? ""));
+        message.From.Add(new MailboxAddress("Vista Core", smtpUser));
         message.To.Add(MailboxAddress.Parse(empfaengerEmail));
         message.Subject = betreff;
         message.Body = new TextPart("html") { Text = htmlInhalt };
@@ -72,8 +77,8 @@ public class EmailService
         using var client = new SmtpClient();
         try
         {
-            await client.ConnectAsync(smtp["Host"] ?? "", int.Parse(smtp["Port"] ?? "587"), MailKit.Security.SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtp["User"] ?? "", smtp["Pass"] ?? "");
+            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPass);
             await client.SendAsync(message);
             _logger.LogInformation("E-Mail an {Email} gesendet", empfaengerEmail);
         }

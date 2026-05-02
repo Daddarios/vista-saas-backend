@@ -152,16 +152,16 @@ public class VikaChatBotService
         };
 
         var enumerator = _chat.GetStreamingChatMessageContentsAsync(chatHistory, settings, kernelMitPlugins).GetAsyncEnumerator();
+        
         bool hasError = false;
         try
         {
-            while (true)
+            bool hasMore = true;
+            while (hasMore && !hasError)
             {
-                string? content = null;
                 try
                 {
-                    if (!await enumerator.MoveNextAsync()) break;
-                    content = enumerator.Current.Content;
+                    hasMore = await enumerator.MoveNextAsync();
                 }
                 catch (Exception ex)
                 {
@@ -169,7 +169,15 @@ public class VikaChatBotService
                     hasError = true;
                     break;
                 }
-                if (!string.IsNullOrEmpty(content)) yield return content!;
+
+                if (hasMore)
+                {
+                    var content = enumerator.Current.Content;
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        yield return content!;
+                    }
+                }
             }
         }
         finally
