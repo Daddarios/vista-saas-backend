@@ -18,22 +18,9 @@ public class VikaChatBotService
     private readonly ProjektPlugin _projektPlugin;
     private readonly ILogger<VikaChatBotService> _logger;
 
-    private const string SystemPrompt = @"
-Sen VIKA — Vista Intelligenter Kundenassistent'sin.
-Sen bir CRM asistanısın. KURALLAR:
-1. SADECE sana verilen kontekst bilgisinden ve plugin sonuçlarından cevap ver.
-2. Kontekstte bilgi yoksa: 'Bu bilgiye sahip değilim, lütfen yöneticinize danışın.' de.
-3. Kişisel veri (şifre, IBAN, kredi kartı) ASLA paylaşma.
-4. Cevapları kısa ve net tut (max 3 cümle).
-5. Her cevabın sonunda kaynağı belirt (hangi müşteri, ticket veya proje).
-6. Uydurma bilgi verme — bilmiyorsan 'Bilmiyorum' de.
-7. Almanca veya Türkçe cevap ver (kullanıcının diline göre).
-
-MEVCUT YETENEKLERİN:
-- Müşteri arama ve detay görüntüleme (kunde_suchen, kunde_details, kunde_anzahl)
-- Ticket listeleme, arama ve istatistik (offene_tickets, ticket_suchen, ticket_statistik)
-- Proje listeleme, arama ve istatistik (aktive_projekte, projekt_suchen, projekt_statistik)
-";
+    private string SystemPrompt => File.Exists(".VikaRules.md") 
+        ? File.ReadAllText(".VikaRules.md") 
+        : "Sen VIKA'sın. (Dosya bulunamadı)";
 
     public VikaChatBotService(
         Kernel kernel,
@@ -100,10 +87,13 @@ MEVCUT YETENEKLERİN:
         {
             var settings = new PromptExecutionSettings
             {
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
                 ExtensionData = new Dictionary<string, object>
                 {
                     ["max_tokens"] = 500,
-                    ["temperature"] = 0.1
+                    ["temperature"] = 0.0,
+                    ["repeat_penalty"] = 1.3,
+                    ["frequency_penalty"] = 0.5
                 }
             };
 
@@ -151,18 +141,29 @@ MEVCUT YETENEKLERİN:
 
         var settings = new PromptExecutionSettings
         {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
             ExtensionData = new Dictionary<string, object>
             {
                 ["max_tokens"] = 500,
-                ["temperature"] = 0.1
+                ["temperature"] = 0.0,
+                ["repeat_penalty"] = 1.3,
+                ["frequency_penalty"] = 0.5
             }
         };
 
-        await foreach (var chunk in _chat.GetStreamingChatMessageContentsAsync(
-            chatHistory, settings, kernelMitPlugins))
+        try
         {
-            if (!string.IsNullOrEmpty(chunk.Content))
-                yield return chunk.Content;
+            await foreach (var chunk in _chat.GetStreamingChatMessageContentsAsync(
+                chatHistory, settings, kernelMitPlugins))
+            {
+                if (!string.IsNullOrEmpty(chunk.Content))
+                    yield return chunk.Content;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "VIKA | Stream Fehler");
+            yield return "\n[Bağlantı veya model hatası oluştu, lütfen tekrar deneyin.]";
         }
     }
 }

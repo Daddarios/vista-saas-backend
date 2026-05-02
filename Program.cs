@@ -66,13 +66,21 @@ builder.Services.AddAuthentication(opt =>
         ClockSkew = TimeSpan.Zero
     };
 
-    // httpOnly cookie'den token oku (ADIM 3.10)
     opt.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            if (context.Request.Cookies.TryGetValue("accessToken", out var token))
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            else if (context.Request.Cookies.TryGetValue("accessToken", out var token))
+            {
                 context.Token = token;
+            }
             return Task.CompletedTask;
         }
     };
@@ -110,8 +118,13 @@ var memory = new KernelMemoryBuilder()
         Endpoint = ollamaEndpoint,
         TextModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
     })
+    .WithOllamaTextGeneration(new OllamaConfig
+    {
+        Endpoint = ollamaEndpoint,
+        TextModel = new OllamaModelConfig(ollamaModel)
+    })
     .WithQdrantMemoryDb(qdrantEndpoint)
-    .Build<MemoryServerless>();
+    .Build<MemoryServerless>(new KernelMemoryBuilderBuildOptions { AllowMixingVolatileAndPersistentData = true });
 
 builder.Services.AddSingleton<IKernelMemory>(memory);
 

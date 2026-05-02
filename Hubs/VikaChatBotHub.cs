@@ -53,7 +53,12 @@ public class VikaChatBotHub : Hub
 
     private Guid? GetMandantId()
     {
-        var header = Context.GetHttpContext()?.Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : null;
+        var httpContext = Context.GetHttpContext();
+        if (httpContext == null) return null;
+
+        var mandantIdStr = httpContext.Request.Headers["X-Mandant-Id"].FirstOrDefault() 
+                           ?? httpContext.Request.Query["mandantId"].FirstOrDefault();
+
+        return Guid.TryParse(mandantIdStr, out var id) ? id : null;
     }
 }

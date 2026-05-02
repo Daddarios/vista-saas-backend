@@ -31,4 +31,10 @@
     <None Include=".github\workflows\ci.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include=".VikaRules.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
