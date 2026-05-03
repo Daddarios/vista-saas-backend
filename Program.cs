@@ -103,36 +103,68 @@ var ollamaModel = builder.Configuration["Vika:Model"] ?? "phi4-mini";
 
 var kernelBuilder = Kernel.CreateBuilder();
 #pragma warning disable SKEXP0070
-kernelBuilder.AddOllamaChatCompletion(ollamaModel, new Uri(ollamaEndpoint));
+// CPU-Inferenz auf Ollama kann lange dauern; Timeout deutlich erhöhen
+var ollamaHttpClient = new HttpClient
+{
+    BaseAddress = new Uri(ollamaEndpoint),
+    Timeout = TimeSpan.FromMinutes(10)
+};
+kernelBuilder.AddOllamaChatCompletion(ollamaModel, ollamaHttpClient);
 #pragma warning restore SKEXP0070
 var kernel = kernelBuilder.Build();
 
 builder.Services.AddSingleton(kernel);
 builder.Services.AddSingleton(kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
 
-// Kernel Memory (RAG)
-var qdrantEndpoint = builder.Configuration["Vika:QdrantEndpoint"] ?? "http://localhost:6333";
-var memory = new KernelMemoryBuilder()
-    .WithOllamaTextEmbeddingGeneration(new OllamaConfig
-    {
-        Endpoint = ollamaEndpoint,
-        TextModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
-    })
-    .WithOllamaTextGeneration(new OllamaConfig
-    {
-        Endpoint = ollamaEndpoint,
-        TextModel = new OllamaModelConfig(ollamaModel)
-    })
-    .WithQdrantMemoryDb(qdrantEndpoint)
-    .Build<MemoryServerless>(new KernelMemoryBuilderBuildOptions { AllowMixingVolatileAndPersistentData = true });
+// Kernel Memory (RAG) — Qdrant (Production) veya SimpleVectorDb (Development)
+var qdrantEndpoint = builder.Configuration["Vika:QdrantEndpoint"];
+var useQdrant = !string.IsNullOrEmpty(qdrantEndpoint) && builder.Environment.IsProduction();
 
-builder.Services.AddSingleton<IKernelMemory>(memory);
+builder.Services.AddSingleton<IKernelMemory>(sp => 
+{
+    try
+    {
+        var memoryBuilder = new KernelMemoryBuilder()
+            .WithOllamaTextEmbeddingGeneration(new OllamaConfig
+            {
+                Endpoint = ollamaEndpoint,
+                TextModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
+            })
+            .WithOllamaTextGeneration(new OllamaConfig
+            {
+                Endpoint = ollamaEndpoint,
+                TextModel = new OllamaModelConfig(ollamaModel)
+            });
+
+        if (useQdrant)
+        {
+            Log.Information("KernelMemory: Qdrant @ {Endpoint}", qdrantEndpoint);
+            memoryBuilder.WithQdrantMemoryDb(qdrantEndpoint!);
+        }
+        else
+        {
+            Log.Information("KernelMemory: SimpleVectorDb (Volatile)");
+            memoryBuilder.WithSimpleVectorDb(new Microsoft.KernelMemory.MemoryStorage.DevTools.SimpleVectorDbConfig 
+            { 
+                StorageType = Microsoft.KernelMemory.FileSystem.DevTools.FileSystemTypes.Volatile 
+            });
+        }
+
+        return memoryBuilder.Build<MemoryServerless>();
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "KernelMemory initialisierung fehlgeschlagen.");
+        throw;
+    }
+});
+
+builder.Services.AddScoped<DataIngestionService>(); // RAG aktif
 
 builder.Services.AddSingleton<ChatInputFilter>();
 builder.Services.AddSingleton<ChatOutputFilter>();
 builder.Services.AddScoped<ChatRateLimiter>();
 builder.Services.AddScoped<VikaChatBotService>();
-builder.Services.AddScoped<DataIngestionService>();
 builder.Services.AddScoped<KundePlugin>();
 builder.Services.AddScoped<TicketPlugin>();
 builder.Services.AddScoped<ProjektPlugin>();

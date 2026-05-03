@@ -1,6 +1,8 @@
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
+#pragma warning disable SKEXP0070
+using Microsoft.SemanticKernel.Connectors.Ollama;
+#pragma warning restore SKEXP0070
 using Vista.Core.DTOs.ChatBot;
 using Vista.Core.Plugins;
 
@@ -85,17 +87,18 @@ public class VikaChatBotService
         // 4. LLM çağrısı — auto function calling
         try
         {
-            var settings = new PromptExecutionSettings
+#pragma warning disable SKEXP0070
+            var settings = new OllamaPromptExecutionSettings
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+                Temperature = 0.0f,
+                NumPredict = 500,
                 ExtensionData = new Dictionary<string, object>
                 {
-                    ["max_tokens"] = 500,
-                    ["temperature"] = 0.0,
-                    ["repeat_penalty"] = 1.3,
-                    ["frequency_penalty"] = 0.5
+                    ["repeat_penalty"] = 1.3
                 }
             };
+#pragma warning restore SKEXP0070
 
             var result = await _chat.GetChatMessageContentAsync(
                 chatHistory, settings, kernelMitPlugins);
@@ -139,21 +142,23 @@ public class VikaChatBotService
         chatHistory.AddSystemMessage(SystemPrompt);
         chatHistory.AddUserMessage(nachricht);
 
-        var settings = new PromptExecutionSettings
+#pragma warning disable SKEXP0070
+        var settings = new OllamaPromptExecutionSettings
         {
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
+            Temperature = 0.0f,
+            NumPredict = 500,
             ExtensionData = new Dictionary<string, object>
             {
-                ["max_tokens"] = 500,
-                ["temperature"] = 0.0,
-                ["repeat_penalty"] = 1.3,
-                ["frequency_penalty"] = 0.5
+                ["repeat_penalty"] = 1.3
             }
         };
+#pragma warning restore SKEXP0070
 
         var enumerator = _chat.GetStreamingChatMessageContentsAsync(chatHistory, settings, kernelMitPlugins).GetAsyncEnumerator();
         
         bool hasError = false;
+        string? errorMessage = null;
         try
         {
             bool hasMore = true;
@@ -165,7 +170,8 @@ public class VikaChatBotService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "VIKA | Stream Fehler");
+                    _logger.LogError(ex, "VIKA | Stream Fehler | Message: {Msg}", ex.Message);
+                    errorMessage = ex.InnerException?.Message ?? ex.Message;
                     hasError = true;
                     break;
                 }
@@ -187,7 +193,7 @@ public class VikaChatBotService
 
         if (hasError)
         {
-            yield return "\n[Bağlantı veya model hatası oluştu, lütfen tekrar deneyin.]";
+            yield return $"\n[VIKA Fehler: {errorMessage}]";
         }
     }
 }

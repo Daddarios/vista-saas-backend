@@ -25,12 +25,17 @@ public class VikaChatBotHub : Hub
             return;
         }
 
-        // Streaming: token token gönder
         await Clients.Caller.SendAsync("VikaSchreibt", true);
 
-        await foreach (var chunk in _vikaService.FrageStreamen(nachricht, mandantId.Value))
+        try
         {
-            await Clients.Caller.SendAsync("VikaAntwortChunk", chunk);
+            var antwort = await _vikaService.FrageStellen(nachricht, mandantId.Value);
+            await Clients.Caller.SendAsync("VikaAntwortChunk", antwort.Antwort);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "VIKA Hub | Fehler");
+            await Clients.Caller.SendAsync("VikaAntwortChunk", $"[VIKA Fehler: {ex.Message}]");
         }
 
         await Clients.Caller.SendAsync("VikaSchreibt", false);
