@@ -247,19 +247,13 @@ public class AuthController : ControllerBase
     /// </summary>
     private void SetTokenCookies(AuthResponseDto tokens)
     {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Path = "/"
-        };
+        var isDev = _env.IsDevelopment();
 
         Response.Cookies.Append("accessToken", tokens.AccessToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
+            Secure = !isDev,
+            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
             Path = "/",
             Expires = tokens.AccessTokenAblauf
         });
@@ -267,8 +261,8 @@ public class AuthController : ControllerBase
         Response.Cookies.Append("refreshToken", tokens.RefreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
+            Secure = !isDev,
+            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
             Path = "/api/auth",
             Expires = DateTimeOffset.UtcNow.AddDays(7)
         });
