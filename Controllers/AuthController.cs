@@ -101,9 +101,7 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Benutzer {Email} erfolgreich angemeldet", dto.Email);
 
-        var mandant = await _db.Mandanten.FirstOrDefaultAsync(m => m.IstAktiv && !m.IstGeloescht);
-
-        // Token'ı response'da döndür (IP/mobil erişim için)
+        // MandantId artık kullanıcıdan geliyor
         return Ok(new 
         { 
             Nachricht = "Erfolgreich angemeldet.", 
@@ -111,7 +109,7 @@ public class AuthController : ControllerBase
             RefreshToken = tokens.RefreshToken,
             AccessTokenAblauf = tokens.AccessTokenAblauf,
             Email = benutzer.Email,
-            MandantId = mandant?.Id,
+            MandantId = benutzer.MandantId,
             Rolle = benutzer.Rolle,
             Vorname = benutzer.Vorname,
             Nachname = benutzer.Nachname

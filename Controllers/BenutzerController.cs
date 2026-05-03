@@ -35,7 +35,8 @@ public class BenutzerController : ControllerBase
                 b.RufNummer,
                 b.Abteilung,
                 b.Rolle,
-                b.Bild
+                b.Bild,
+                b.MandantId
             })
             .ToList();
 
@@ -61,6 +62,7 @@ public class BenutzerController : ControllerBase
             b.Rolle,
             b.Bild,
             b.Hinweise,
+            b.MandantId,
             Rollen = rollen
         });
     }
