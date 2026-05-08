@@ -2,7 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using Vista.Core.Data;
+using Vista.Core.Hubs;
+using Vista.Core.Services;
 
 namespace Vista.Core.Controllers;
 
@@ -12,10 +15,14 @@ namespace Vista.Core.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly FileStorageService _fileService;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public ChatController(AppDbContext db)
+    public ChatController(AppDbContext db, FileStorageService fileService, IHubContext<ChatHub> hubContext)
     {
         _db = db;
+        _fileService = fileService;
+        _hubContext = hubContext;
     }
 
     private Guid RequireMandantId()
@@ -37,6 +44,8 @@ public class ChatController : ControllerBase
                 .Where(r => !r.IstGeloescht && r.MandantId == mandantId)
                 .Include(r => r.Projekt!).ThenInclude(p => p.Benutzer)
                 .Include(r => r.Ticket!).ThenInclude(t => t.ZugewiesenAn)
+                .Include(r => r.Benutzer1)
+                .Include(r => r.Benutzer2)
                 .OrderBy(r => r.Name)
                 .ToListAsync();
 
@@ -63,6 +72,13 @@ public class ChatController : ControllerBase
                         bild = r.Ticket.ZugewiesenAn.Bild
                     });
                 }
+                else if (r.IstDirektChat)
+                {
+                    if (r.Benutzer1 != null)
+                        teilnehmer.Add(new { id = r.Benutzer1.Id, vorname = r.Benutzer1.Vorname, nachname = r.Benutzer1.Nachname, bild = r.Benutzer1.Bild });
+                    if (r.Benutzer2 != null)
+                        teilnehmer.Add(new { id = r.Benutzer2.Id, vorname = r.Benutzer2.Vorname, nachname = r.Benutzer2.Nachname, bild = r.Benutzer2.Bild });
+                }
 
                 return new
                 {
@@ -70,6 +86,7 @@ public class ChatController : ControllerBase
                     name = r.Name,
                     projektId = r.ProjektId,
                     ticketId = r.TicketId,
+                    istDirektChat = r.IstDirektChat,
                     teilnehmer
                 };
             });
@@ -78,6 +95,7 @@ public class ChatController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"ChatController.GetRaeume Error: {ex}");
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -112,6 +130,11 @@ public class ChatController : ControllerBase
                     id = n.Id,
                     inhalt = n.Inhalt,
                     geschicktAm = n.GeschicktAm,
+                    istDatei = n.IstDatei,
+                    dateiPfad = n.DateiPfad,
+                    dateiName = n.DateiName,
+                    dateiTyp = n.DateiTyp,
+                    dateiGroesse = n.DateiGroesse,
                     absenderId = n.AbsenderId,
                     absender = n.Absender == null ? null : new
                     {
@@ -128,6 +151,118 @@ public class ChatController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"ChatController Error: {ex}");
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("direktchat/{zielBenutzerId}")]
+    public async Task<IActionResult> GetOrCreateDirektChat(string zielBenutzerId)
+    {
+        try
+        {
+            var mandantId = RequireMandantId();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            if (userId == zielBenutzerId) return BadRequest("Kann keinen Chat mit sich selbst starten");
+
+            // Sortiere IDs, damit Chat-Räume konsistent sind
+            var user1Id = string.Compare(userId, zielBenutzerId) < 0 ? userId : zielBenutzerId;
+            var user2Id = string.Compare(userId, zielBenutzerId) < 0 ? zielBenutzerId : userId;
+
+            var existingRaum = await _db.ChatRaeume
+                .FirstOrDefaultAsync(r => r.IstDirektChat && r.MandantId == mandantId && 
+                                          r.Benutzer1Id == user1Id && r.Benutzer2Id == user2Id && !r.IstGeloescht);
+
+            if (existingRaum != null)
+            {
+                return Ok(new { id = existingRaum.Id });
+            }
+
+            // Neuen Raum erstellen
+            var zielBenutzer = await _db.Users.FindAsync(zielBenutzerId);
+            if (zielBenutzer == null) return NotFound("Ziel-Benutzer nicht gefunden");
+
+            var aktuellerBenutzer = await _db.Users.FindAsync(userId);
+
+            var neuerRaum = new Vista.Core.Models.ChatRaum
+            {
+                MandantId = mandantId,
+                IstDirektChat = true,
+                Name = $"Chat: {aktuellerBenutzer?.Vorname} & {zielBenutzer.Vorname}",
+                Benutzer1Id = user1Id,
+                Benutzer2Id = user2Id
+            };
+
+            _db.ChatRaeume.Add(neuerRaum);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { id = neuerRaum.Id });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("raum/{raumId}/datei")]
+    public async Task<IActionResult> UploadFile(Guid raumId, IFormFile datei)
+    {
+        try
+        {
+            var mandantId = RequireMandantId();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var raum = await _db.ChatRaeume
+                .FirstOrDefaultAsync(r => r.Id == raumId && r.MandantId == mandantId && !r.IstGeloescht);
+            
+            if (raum == null) return NotFound("Raum nicht gefunden");
+
+            var uniqueId = Guid.NewGuid().ToString();
+            var (success, fileUrl, error) = await _fileService.UploadFileAsync(datei, FileStorageService.ChatFolder, uniqueId);
+
+            if (!success) return BadRequest(new { error });
+
+            var nachricht = new Vista.Core.Models.ChatNachricht
+            {
+                MandantId = mandantId,
+                RaumId = raumId,
+                AbsenderId = userId,
+                Inhalt = "Datei gesendet",
+                IstDatei = true,
+                DateiPfad = fileUrl,
+                DateiName = datei.FileName,
+                DateiTyp = datei.ContentType,
+                DateiGroesse = datei.Length
+            };
+
+            _db.ChatNachrichten.Add(nachricht);
+            await _db.SaveChangesAsync();
+
+            var user = await _db.Users.FindAsync(userId);
+            var payload = new
+            {
+                id = nachricht.Id,
+                raumId = raumId,
+                inhalt = nachricht.Inhalt,
+                geschicktAm = nachricht.GeschicktAm,
+                istDatei = nachricht.IstDatei,
+                dateiPfad = nachricht.DateiPfad,
+                dateiName = nachricht.DateiName,
+                dateiTyp = nachricht.DateiTyp,
+                dateiGroesse = nachricht.DateiGroesse,
+                absenderId = userId,
+                absender = user == null ? null : new { vorname = user.Vorname, nachname = user.Nachname, bild = user.Bild }
+            };
+
+            await _hubContext.Clients.Group(raumId.ToString()).SendAsync("ReceiveMessage", payload);
+
+            return Ok(payload);
+        }
+        catch (Exception ex)
+        {
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -135,6 +270,9 @@ public class ChatController : ControllerBase
     private Guid? GetMandantId()
     {
         var header = Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : null;
+        if (Guid.TryParse(header, out var id)) return id;
+        
+        var query = Request.Query["mandantId"].FirstOrDefault();
+        return Guid.TryParse(query, out var qid) ? qid : null;
     }
 }

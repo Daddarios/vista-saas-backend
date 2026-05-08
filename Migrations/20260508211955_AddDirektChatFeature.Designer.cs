@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Vista.Core.Data;
 
@@ -11,9 +12,11 @@ using Vista.Core.Data;
 namespace Vista.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260508211955_AddDirektChatFeature")]
+    partial class AddDirektChatFeature
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -419,18 +422,6 @@ namespace Vista.Core.Migrations
                     b.Property<DateTime?>("AktualisiertAm")
                         .HasColumnType("datetime2");
 
-                    b.Property<long?>("DateiGroesse")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("DateiName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DateiPfad")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DateiTyp")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("ErstelltAm")
                         .HasColumnType("datetime2");
 
@@ -440,9 +431,6 @@ namespace Vista.Core.Migrations
                     b.Property<string>("Inhalt")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IstDatei")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IstGeloescht")
                         .HasColumnType("bit");

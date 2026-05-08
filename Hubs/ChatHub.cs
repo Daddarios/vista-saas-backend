@@ -17,6 +17,10 @@ public class ChatHub : Hub
     private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, HashSet<string>>> _rooms = new();
     // connectionId -> Set<raumId> (für Cleanup bei Disconnect)
     private static readonly ConcurrentDictionary<string, HashSet<string>> _connectionRooms = new();
+    
+    // mandantId -> userId -> Set<connectionId>
+    private static readonly ConcurrentDictionary<Guid, ConcurrentDictionary<string, HashSet<string>>> _onlineUsers = new();
+    
     private static readonly object _lock = new();
 
     public ChatHub(AppDbContext db)
@@ -114,6 +118,11 @@ public class ChatHub : Hub
             raumId = raumGuid,
             inhalt = nachricht.Inhalt,
             geschicktAm = nachricht.GeschicktAm,
+            istDatei = false,
+            dateiPfad = (string?)null,
+            dateiName = (string?)null,
+            dateiTyp = (string?)null,
+            dateiGroesse = (long?)null,
             absenderId = userId,
             absender = user == null ? null : new
             {
@@ -132,6 +141,43 @@ public class ChatHub : Hub
         await Clients.OthersInGroup(raumId).SendAsync("UserTyping", new { userId, raumId });
     }
 
+    public async Task<IEnumerable<string>> GetOnlineUsers()
+    {
+        var mandantId = GetMandantId();
+        if (mandantId != Guid.Empty && _onlineUsers.TryGetValue(mandantId, out var users))
+        {
+            return users.Keys.ToArray();
+        }
+        return Enumerable.Empty<string>();
+    }
+
+    public override async Task OnConnectedAsync()
+    {
+        var mandantId = GetMandantId();
+        var userId = GetUserId();
+
+        if (mandantId != Guid.Empty && !string.IsNullOrEmpty(userId))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"Mandant_{mandantId}");
+
+            bool isNewOnline = false;
+            lock (_lock)
+            {
+                var users = _onlineUsers.GetOrAdd(mandantId, _ => new ConcurrentDictionary<string, HashSet<string>>());
+                var conns = users.GetOrAdd(userId, _ => new HashSet<string>());
+                isNewOnline = conns.Count == 0;
+                conns.Add(Context.ConnectionId);
+            }
+
+            if (isNewOnline)
+            {
+                await Clients.Group($"Mandant_{mandantId}").SendAsync("GlobalUserOnlineStatus", new { userId, isOnline = true });
+            }
+        }
+
+        await base.OnConnectedAsync();
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = GetUserId();
@@ -147,9 +193,32 @@ public class ChatHub : Hub
 
         foreach (var raumId in roomsToCheck)
         {
-            bool wentOffline = RemoveConnectionFromRoom(raumId, userId, connId);
-            if (wentOffline)
+            bool wentOfflineFromRoom = RemoveConnectionFromRoom(raumId, userId, connId);
+            if (wentOfflineFromRoom)
                 await Clients.Group(raumId).SendAsync("UserLeft", userId);
+        }
+
+        var mandantId = GetMandantId();
+        if (mandantId != Guid.Empty && !string.IsNullOrEmpty(userId))
+        {
+            bool wentOfflineGlobal = false;
+            lock (_lock)
+            {
+                if (_onlineUsers.TryGetValue(mandantId, out var users) && users.TryGetValue(userId, out var conns))
+                {
+                    conns.Remove(connId);
+                    if (conns.Count == 0)
+                    {
+                        users.TryRemove(userId, out _);
+                        wentOfflineGlobal = true;
+                    }
+                }
+            }
+
+            if (wentOfflineGlobal)
+            {
+                await Clients.Group($"Mandant_{mandantId}").SendAsync("GlobalUserOnlineStatus", new { userId, isOnline = false });
+            }
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -178,7 +247,12 @@ public class ChatHub : Hub
 
     private Guid GetMandantId()
     {
-        var header = Context.GetHttpContext()?.Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : Guid.Empty;
+        var httpCtx = Context.GetHttpContext();
+        // Önce header'dan dene
+        var header = httpCtx?.Request.Headers["X-Mandant-Id"].FirstOrDefault();
+        if (Guid.TryParse(header, out var id)) return id;
+        // WebSocket'te header olmaz — query string'den oku
+        var query = httpCtx?.Request.Query["mandantId"].FirstOrDefault();
+        return Guid.TryParse(query, out var qid) ? qid : Guid.Empty;
     }
 }

@@ -22,5 +22,15 @@ public class ChatRaumConfiguration : IEntityTypeConfiguration<ChatRaum>
             .WithOne(x => x.Raum)
             .HasForeignKey(x => x.RaumId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.Benutzer1)
+            .WithMany()
+            .HasForeignKey(x => x.Benutzer1Id)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.Benutzer2)
+            .WithMany()
+            .HasForeignKey(x => x.Benutzer2Id)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

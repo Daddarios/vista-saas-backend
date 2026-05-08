@@ -11,7 +11,7 @@ public class FileStorageService
     private readonly string _storageBasePath;
 
     // İzin verilen dosya uzantıları
-    private static readonly string[] AllowedExtensions = { ".png", ".jpg", ".jpeg" };
+    private static readonly string[] AllowedExtensions = { ".png", ".jpg", ".jpeg", ".pdf", ".xls", ".xlsx", ".doc", ".docx", ".zip", ".rar", ".txt" };
 
     // Max dosya boyutu: 5MB
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
@@ -19,6 +19,7 @@ public class FileStorageService
     // Klasör yapısı
     public const string LogosFolder = "Logos";
     public const string AvatarsFolder = "Avatars";
+    public const string ChatFolder = "Chat";
 
     public FileStorageService(IWebHostEnvironment env, ILogger<FileStorageService> logger)
     {
@@ -50,6 +51,13 @@ public class FileStorageService
             {
                 Directory.CreateDirectory(avatarsPath);
                 _logger.LogInformation("Avatars klasörü oluşturuldu: {Path}", avatarsPath);
+            }
+
+            var chatPath = Path.Combine(_storageBasePath, ChatFolder);
+            if (!Directory.Exists(chatPath))
+            {
+                Directory.CreateDirectory(chatPath);
+                _logger.LogInformation("Chat klasörü oluşturuldu: {Path}", chatPath);
             }
         }
         catch (Exception ex)

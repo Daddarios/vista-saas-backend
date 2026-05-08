@@ -12,4 +12,10 @@ public class ChatNachricht : MandantEntity
 
     public string Inhalt { get; set; } = string.Empty;
     public DateTime GeschicktAm { get; set; } = DateTime.UtcNow;
+
+    public bool IstDatei { get; set; } = false;
+    public string? DateiPfad { get; set; }
+    public string? DateiName { get; set; }
+    public string? DateiTyp { get; set; }
+    public long? DateiGroesse { get; set; }
 }
