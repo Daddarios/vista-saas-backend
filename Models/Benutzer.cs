@@ -13,7 +13,7 @@ public class Benutzer : IdentityUser
     public string Hinweise { get; set; } = string.Empty;
 
     // Kullanıcı hangi tenant/mandant'a aitse zorunlu alan
-    public string MandantId { get; set; } = string.Empty;
+    public string MandantId { get; set; } = "00000000-0000-0000-0000-000000000000";
 
     public ICollection<Projekt> Projekte { get; set; } = new List<Projekt>();
 }
