@@ -168,6 +168,7 @@ public class AuthController : ControllerBase
             benutzer.RufNummer,
             benutzer.Abteilung,
             benutzer.Rolle,
+            benutzer.MandantId,
             Rollen = rollen
         });
     }
