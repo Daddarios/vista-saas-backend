@@ -29,7 +29,7 @@ public class ChatController : ControllerBase
     {
         var mandantId = GetMandantId();
         if (mandantId == null)
-            throw new Exception("X-Mandant-Id Header fehlt");
+            throw new Exception("MandantId Claim fehlt");
         return mandantId.Value;
     }
 
@@ -269,10 +269,7 @@ public class ChatController : ControllerBase
 
     private Guid? GetMandantId()
     {
-        var header = Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        if (Guid.TryParse(header, out var id)) return id;
-        
-        var query = Request.Query["mandantId"].FirstOrDefault();
-        return Guid.TryParse(query, out var qid) ? qid : null;
+        var claim = User.FindFirst("MandantId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 }

@@ -191,7 +191,7 @@ public class ProjektController : ControllerBase
 
     private Guid? GetMandantId()
     {
-        var header = Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : null;
+        var claim = User.FindFirst("MandantId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 }

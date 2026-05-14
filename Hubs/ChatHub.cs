@@ -247,12 +247,7 @@ public class ChatHub : Hub
 
     private Guid GetMandantId()
     {
-        var httpCtx = Context.GetHttpContext();
-        // Önce header'dan dene
-        var header = httpCtx?.Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        if (Guid.TryParse(header, out var id)) return id;
-        // WebSocket'te header olmaz — query string'den oku
-        var query = httpCtx?.Request.Query["mandantId"].FirstOrDefault();
-        return Guid.TryParse(query, out var qid) ? qid : Guid.Empty;
+        var claim = Context.User?.FindFirst("MandantId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
     }
 }

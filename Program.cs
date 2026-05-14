@@ -175,16 +175,24 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestDtoValidator>();
 builder.Services.AddSwaggerGen();
 
-// CORS: Frontend IP'lerine izin ver (güvenli whitelist)
+// CORS: Frontend origin'lerini config/env üzerinden yönet.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+var fallbackOrigins = new[]
+{
+    "http://localhost:5173",
+    "http://192.168.0.45:5173"
+};
+var corsOrigins = (allowedOrigins is { Length: > 0 } ? allowedOrigins : fallbackOrigins)
+    .Where(o => !string.IsNullOrWhiteSpace(o))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
 builder.Services.AddCors(opt => opt.AddPolicy("AllowFrontend", policy =>
 {
-    policy.WithOrigins(
-        "http://localhost:5173",      // Local development
-        "http://192.168.0.45:5173"    // Network üzerinden erişim (telefon/başka PC)
-    )
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .AllowCredentials();
+    policy.WithOrigins(corsOrigins)
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
 }));
 
 var app = builder.Build();

@@ -14,8 +14,9 @@ public class AppDbContext : IdentityDbContext<Benutzer>
     public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor)
         : base(options)
     {
-        var mandantHeader = httpContextAccessor.HttpContext?.Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        if (Guid.TryParse(mandantHeader, out var mandantId))
+        var mandantClaim = httpContextAccessor.HttpContext?.User?.FindFirst("MandantId")?.Value;
+
+        if (Guid.TryParse(mandantClaim, out var mandantId))
         {
             _currentMandantId = mandantId;
         }

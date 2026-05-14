@@ -30,7 +30,9 @@ public class JwtService
             new(ClaimTypes.NameIdentifier, benutzer.Id),
             new(ClaimTypes.Email, benutzer.Email ?? string.Empty),
             new("Vorname", benutzer.Vorname),
-            new("Nachname", benutzer.Nachname)
+            new("Nachname", benutzer.Nachname),
+            new("MandantId", benutzer.MandantId),
+            new("Rolle", benutzer.Rolle)
         };
 
         foreach (var rolle in rollen)
@@ -107,7 +109,9 @@ public class JwtService
             new(ClaimTypes.NameIdentifier, benutzer.Id),
             new(ClaimTypes.Email, benutzer.Email ?? string.Empty),
             new("Vorname", benutzer.Vorname),
-            new("Nachname", benutzer.Nachname)
+            new("Nachname", benutzer.Nachname),
+            new("MandantId", benutzer.MandantId),
+            new("Rolle", benutzer.Rolle)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Vista.Core.Data;
 using Vista.Core.DTOs.Common;
 using Vista.Core.DTOs.Kunde;
@@ -217,7 +218,7 @@ public class KundeController : ControllerBase
 
     private Guid? GetMandantId()
     {
-        var header = Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : null;
+        var claim = User.FindFirst("MandantId")?.Value;
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 }

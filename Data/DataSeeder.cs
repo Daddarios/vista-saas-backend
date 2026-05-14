@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Vista.Core.Models;
 
@@ -13,6 +14,7 @@ public static class DataSeeder
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = serviceProvider.GetRequiredService<UserManager<Benutzer>>();
+        var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
 
         string[] rollen = ["SuperAdmin", "Admin", "Manager", "Standard", "NurLesen"];
 
@@ -23,6 +25,11 @@ public static class DataSeeder
         }
 
         // Demo SuperAdmin kullanıcı
+        if (!env.IsDevelopment())
+        {
+            return;
+        }
+
         const string adminEmail = "admin@vista.local";
         const string adminPassword = "Test123!";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using Vista.Core.Data;
 using Vista.Core.DTOs.Abonnement;
 using Vista.Core.Enums;
@@ -70,9 +71,9 @@ public class AbonnementController : ControllerBase
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] AbonnementRequestDto dto)
     {
-        var mandantHeader = Request.Headers["X-Mandant-Id"].FirstOrDefault();
-        if (!Guid.TryParse(mandantHeader, out var mandantId))
-            return BadRequest("X-Mandant-Id header gerekli.");
+        var mandantClaim = User.FindFirst("MandantId")?.Value;
+        if (!Guid.TryParse(mandantClaim, out var mandantId))
+            return BadRequest("MandantId claim fehlt.");
 
         var entity = new Abonnement
         {

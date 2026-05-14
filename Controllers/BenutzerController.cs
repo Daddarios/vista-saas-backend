@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Vista.Core.Models;
 using Vista.Core.Services;
 
@@ -25,7 +26,11 @@ public class BenutzerController : ControllerBase
     [HttpGet]
     public IActionResult GetAll()
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var list = _userManager.Users
+            .Where(b => b.MandantId == mandantId)
             .Select(b => new
             {
                 b.Id,
@@ -46,8 +51,11 @@ public class BenutzerController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var b = await _userManager.FindByIdAsync(id);
-        if (b is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+        if (b is null || b.MandantId != mandantId) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
         var rollen = await _userManager.GetRolesAsync(b);
 
@@ -70,6 +78,9 @@ public class BenutzerController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] BenutzerCreateDto dto)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var benutzer = new Benutzer
         {
             UserName = dto.Email,
@@ -79,6 +90,7 @@ public class BenutzerController : ControllerBase
             RufNummer = dto.RufNummer,
             Abteilung = dto.Abteilung,
             Rolle = dto.Rolle,
+            MandantId = mandantId,
             EmailConfirmed = true
         };
 
@@ -96,8 +108,11 @@ public class BenutzerController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] BenutzerUpdateDto dto)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var benutzer = await _userManager.FindByIdAsync(id);
-        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+        if (benutzer is null || benutzer.MandantId != mandantId) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
         benutzer.Vorname = dto.Vorname;
         benutzer.Nachname = dto.Nachname;
@@ -122,8 +137,11 @@ public class BenutzerController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var benutzer = await _userManager.FindByIdAsync(id);
-        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+        if (benutzer is null || benutzer.MandantId != mandantId) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
         // Avatar dosyasını sil (varsa)
         if (!string.IsNullOrWhiteSpace(benutzer.Bild))
@@ -144,8 +162,11 @@ public class BenutzerController : ControllerBase
     [HttpPost("{id}/upload-avatar")]
     public async Task<IActionResult> UploadAvatar(string id, IFormFile avatarFile)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var benutzer = await _userManager.FindByIdAsync(id);
-        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+        if (benutzer is null || benutzer.MandantId != mandantId) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
         var (success, fileUrl, errorMessage) = await _fileStorage.UploadFileAsync(
             avatarFile,
@@ -171,8 +192,11 @@ public class BenutzerController : ControllerBase
     [HttpDelete("{id}/delete-avatar")]
     public async Task<IActionResult> DeleteAvatar(string id)
     {
+        var mandantId = GetMandantId();
+        if (mandantId is null) return BadRequest(new { Nachricht = "MandantId fehlt." });
+
         var benutzer = await _userManager.FindByIdAsync(id);
-        if (benutzer is null) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
+        if (benutzer is null || benutzer.MandantId != mandantId) return NotFound(new { Nachricht = "Benutzer nicht gefunden." });
 
         if (string.IsNullOrWhiteSpace(benutzer.Bild))
             return BadRequest(new { Nachricht = "Avatar zaten mevcut değil." });
@@ -187,6 +211,11 @@ public class BenutzerController : ControllerBase
 
         _logger.LogInformation("Benutzer Avatar silindi | BenutzerId: {Id}", id);
         return Ok(new { Nachricht = "Avatar başarıyla silindi." });
+    }
+
+    private string? GetMandantId()
+    {
+        return User.FindFirst("MandantId")?.Value;
     }
 }
 

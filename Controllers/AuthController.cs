@@ -69,8 +69,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "E-Mail-Versand fehlgeschlagen für {Email}", dto.Email);
-            // Fallback — kodu logla
-            _logger.LogWarning(">>> FALLBACK 2FA CODE für {Email}: {Code} <<<", dto.Email, code);
+            return StatusCode(500, new LoginResponseDto { Nachricht = "Verifizierungscode konnte nicht gesendet werden." });
         }
 
         return Ok(new LoginResponseDto

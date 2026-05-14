@@ -7,7 +7,7 @@ namespace Vista.Core.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "Admin,SuperAdmin")]
 public class VikaAdminController : ControllerBase
 {
     private readonly DataIngestionService _dataIngestionService;
