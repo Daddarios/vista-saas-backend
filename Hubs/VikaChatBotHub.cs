@@ -29,8 +29,10 @@ public class VikaChatBotHub : Hub
 
         try
         {
-            var antwort = await _vikaService.FrageStellen(nachricht, mandantId.Value);
-            await Clients.Caller.SendAsync("VikaAntwortChunk", antwort.Antwort);
+            await foreach (var chunk in _vikaService.FrageStreamen(nachricht, mandantId.Value))
+            {
+                await Clients.Caller.SendAsync("VikaAntwortChunk", chunk);
+            }
         }
         catch (Exception ex)
         {
