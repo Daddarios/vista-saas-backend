@@ -150,7 +150,10 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
             });
         }
 
-        return memoryBuilder.Build<MemoryServerless>();
+        return memoryBuilder.Build<MemoryServerless>(new KernelMemoryBuilderBuildOptions
+        {
+            AllowMixingVolatileAndPersistentData = true
+        });
     }
     catch (Exception ex)
     {
