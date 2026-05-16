@@ -61,6 +61,17 @@ public class VikaChatBotService
         if (!validierung.IstErlaubt)
             return new ChatBotResponseDto { Antwort = validierung.Fehlermeldung, RelevanzScore = 0 };
 
+        var sprachPolicy = EvaluateLanguagePolicy(nachricht);
+        if (!string.IsNullOrWhiteSpace(sprachPolicy.ForcedReply))
+        {
+            return new ChatBotResponseDto
+            {
+                Antwort = sprachPolicy.ForcedReply!,
+                Quelle = "LanguagePolicy",
+                RelevanzScore = 1
+            };
+        }
+
         var route = BestimmeRoute(nachricht);
         var rag = route == AnfrageRoute.Data
             ? await HoleRagKontext(nachricht, mandantId)
@@ -76,7 +87,7 @@ public class VikaChatBotService
             };
         }
 
-        var history = ErstelleHistory(nachricht, rag.KontextText);
+        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint);
         var kernel = route == AnfrageRoute.Data ? KernelMitPlugins() : _kernel;
         var settings = ErstelleAusfuehrungseinstellungen(route == AnfrageRoute.Data);
 
@@ -103,6 +114,13 @@ public class VikaChatBotService
             yield break;
         }
 
+        var sprachPolicy = EvaluateLanguagePolicy(nachricht);
+        if (!string.IsNullOrWhiteSpace(sprachPolicy.ForcedReply))
+        {
+            yield return sprachPolicy.ForcedReply!;
+            yield break;
+        }
+
         var route = BestimmeRoute(nachricht);
         var rag = route == AnfrageRoute.Data
             ? await HoleRagKontext(nachricht, mandantId)
@@ -114,7 +132,7 @@ public class VikaChatBotService
             yield break;
         }
 
-        var history = ErstelleHistory(nachricht, rag.KontextText);
+        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint);
         var kernel = route == AnfrageRoute.Data ? KernelMitPlugins() : _kernel;
         var settings = ErstelleAusfuehrungseinstellungen(route == AnfrageRoute.Data);
 
@@ -157,10 +175,12 @@ public class VikaChatBotService
         return (true, string.Empty);
     }
 
-    private ChatHistory ErstelleHistory(string nachricht, string? ragKontext)
+    private ChatHistory ErstelleHistory(string nachricht, string? ragKontext, string? languageHint)
     {
         var history = new ChatHistory();
         history.AddSystemMessage(SystemPrompt);
+        if (!string.IsNullOrWhiteSpace(languageHint))
+            history.AddSystemMessage(languageHint);
 
         if (!string.IsNullOrWhiteSpace(ragKontext))
         {
@@ -281,6 +301,32 @@ public class VikaChatBotService
 
         return dataKeywords.Any(n.Contains);
     }
+
+    private static (string? ForcedReply, string? SystemHint) EvaluateLanguagePolicy(string nachricht)
+    {
+        var text = nachricht.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return (null, null);
+
+        if (ContainsTurkishChars(text) || Regex.IsMatch(text, @"\b(selam|merhaba|nasıl|nasil|hangi|konus|konuş|orada|ordamsin)\b", RegexOptions.IgnoreCase))
+        {
+            return ("I support English, German, French, and Italian.", null);
+        }
+
+        if (Regex.IsMatch(text, @"\b(bonjour|salut|merci|fran[çc]ais)\b", RegexOptions.IgnoreCase))
+            return (null, "Reply only in French. One concise answer.");
+
+        if (Regex.IsMatch(text, @"\b(ciao|salve|grazie|italiano)\b", RegexOptions.IgnoreCase))
+            return (null, "Reply only in Italian. One concise answer.");
+
+        if (Regex.IsMatch(text, @"\b(hallo|guten|danke|kannst du|deutsch)\b", RegexOptions.IgnoreCase))
+            return (null, "Reply only in German. One concise answer.");
+
+        return (null, "Reply only in English. One concise answer.");
+    }
+
+    private static bool ContainsTurkishChars(string s)
+        => s.IndexOfAny(['ç', 'ğ', 'ı', 'İ', 'ö', 'ş', 'ü', 'Ç', 'Ğ', 'Ö', 'Ş', 'Ü']) >= 0;
 
     private enum AnfrageRoute
     {
