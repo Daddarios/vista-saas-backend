@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,10 @@ public static class TestDbHelper
         if (mandantId.HasValue)
         {
             httpContext.Request.Headers["X-Mandant-Id"] = mandantId.Value.ToString();
+
+            var claims = new[] { new Claim("MandantId", mandantId.Value.ToString()) };
+            var identity = new ClaimsIdentity(claims, "TestAuth");
+            httpContext.User = new ClaimsPrincipal(identity);
         }
         return httpContext;
     }
