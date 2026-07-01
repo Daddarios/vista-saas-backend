@@ -1,26 +1,37 @@
-# .NET
+# === Environment (SECRETS) ===
+.env
+.env.local
+*.env.local
+appsettings.Development.json
+
+# === Yedekler ===
+Vista.Core_YEDEK_*/
+*_YEDEK_*/
+*.bak
+
+# === .NET Build ===
 bin/
 obj/
 *.user
 *.suo
-*.vs/
 *.csproj.user
 
-# Logs & Storage
-Logs/
-Storage/
-
-# Environment
-.env
-appsettings.Development.json
-
-# Docs (internal plans)
-Doc/
-
-# Frontend
-frontend/node_modules/
-frontend/dist/
-
-# IDE
+# === IDE ===
+.vs/
+.vscode/
 .idea/
 *.swp
+
+# === Loglar & Runtime Storage ===
+Logs/
+Storage/
+*.log
+api_logs.txt
+
+# === Docs (internal) ===
+Doc/
+
+# === Frontend (varsa) ===
+frontend/node_modules/
+frontend/dist/
+node_modules/

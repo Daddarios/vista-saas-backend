@@ -11,18 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Kodu al
+        uses: actions/checkout@v4
 
       - name: .NET SDK kurulumu
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: NuGet paketlerini geri yükle
-        run: dotnet restore
+      - name: NuGet paketlerini geri yukle
+        run: dotnet restore Vista.Core.slnx
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Build (Release)
+        run: dotnet build Vista.Core.slnx --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test Vista.Core.slnx --no-build --configuration Release --verbosity normal
