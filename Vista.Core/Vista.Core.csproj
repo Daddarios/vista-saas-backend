@@ -27,7 +27,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="Exists('.VikaRules.md')">
     <Content Include=".VikaRules.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
