@@ -25,9 +25,15 @@ public class VikaChatBotService
     private readonly ILogger<VikaChatBotService> _logger;
     private readonly IConfiguration _configuration;
 
-    private string SystemPrompt => File.Exists(".VikaRules.md")
-        ? File.ReadAllText(".VikaRules.md")
-        : "You are VIKA. Reply concisely and do not fabricate facts.";
+    private static readonly Lazy<string> _systemPrompt = new(() =>
+    {
+        var pfad = Path.Combine(AppContext.BaseDirectory, ".VikaRules.md");
+        return File.Exists(pfad)
+            ? File.ReadAllText(pfad)
+            : "You are VIKA. Reply concisely and do not fabricate facts.";
+    });
+
+    private string SystemPrompt => _systemPrompt.Value;
 
     public VikaChatBotService(
         Kernel kernel,
