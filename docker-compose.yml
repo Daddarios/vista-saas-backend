@@ -24,8 +24,6 @@ services:
       - Vika__EmbeddingModel=nomic-embed-text
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN_1}
       - Cors__AllowedOrigins__1=${FRONTEND_ORIGIN_2}
-    volumes:
-      - ./Vista.Core/.VikaRules.md:/app/.VikaRules.md:ro
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -36,6 +34,7 @@ services:
       qdrant:
         condition: service_started
     volumes:
+      - ./Vista.Core/.VikaRules.md:/app/.VikaRules.md:ro
       - app-storage:/app/Storage
       - app-logs:/app/Logs
     restart: unless-stopped
