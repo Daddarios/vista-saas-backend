@@ -44,25 +44,24 @@ public class AppDbContext : IdentityDbContext<Benutzer>
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        if (_currentMandantId is null)
-        {
-            return;
-        }
-
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()
                      .Where(t => typeof(MandantEntity).IsAssignableFrom(t.ClrType)))
         {
             var method = typeof(AppDbContext)
-                .GetMethod(nameof(SetMandantFilter), BindingFlags.NonPublic | BindingFlags.Static)?
+                .GetMethod(nameof(SetMandantFilter), BindingFlags.NonPublic | BindingFlags.Instance)?
                 .MakeGenericMethod(entityType.ClrType);
 
-            method?.Invoke(null, new object[] { modelBuilder, _currentMandantId.Value });
+            method?.Invoke(this, new object[] { modelBuilder });
         }
     }
 
-    private static void SetMandantFilter<TEntity>(ModelBuilder modelBuilder, Guid mandantId)
+    private void SetMandantFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : MandantEntity
     {
-        modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.MandantId == mandantId);
+        // _currentMandantId instance field'ina referans: EF Core bunu her context
+        // ornegi icin ayri degerlendirir (model cache'e sabit deger gomulmez).
+        // Anonim isteklerde (null) filtre devre disi kalir.
+        modelBuilder.Entity<TEntity>().HasQueryFilter(
+            e => _currentMandantId == null || e.MandantId == _currentMandantId);
     }
 }
