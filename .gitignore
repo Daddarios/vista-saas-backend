@@ -37,3 +37,10 @@ frontend/dist/
 node_modules/
 
 .env.example
+
+# Gizli dokumanlar
+10062026*.md
+Vista.Core/.VikaRules.md
+Vista.Core/DOSYA_YUKLEME_DOKUMENTATION.md
+Vista.Core/FRONTEND_INTEGRATION_GUIDE.md
+api_logs.txt
