@@ -3,9 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.KernelMemory;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-#pragma warning disable SKEXP0070
-using Microsoft.SemanticKernel.Connectors.Ollama;
-#pragma warning restore SKEXP0070
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Vista.Core.DTOs.ChatBot;
 using Vista.Core.Plugins;
 
@@ -199,20 +197,15 @@ public class VikaChatBotService
         return history;
     }
 
-    private OllamaPromptExecutionSettings ErstelleAusfuehrungseinstellungen(bool allowTools)
+    private OpenAIPromptExecutionSettings ErstelleAusfuehrungseinstellungen(bool allowTools)
     {
-#pragma warning disable SKEXP0070
-        return new OllamaPromptExecutionSettings
+        return new OpenAIPromptExecutionSettings
         {
             FunctionChoiceBehavior = allowTools ? FunctionChoiceBehavior.Auto() : FunctionChoiceBehavior.None(),
             Temperature = _configuration.GetValue<float?>("Vika:Generation:Temperature") ?? 0.0f,
-            NumPredict = _configuration.GetValue<int?>("Vika:Generation:MaxTokens") ?? 500,
-            ExtensionData = new Dictionary<string, object>
-            {
-                ["repeat_penalty"] = _configuration.GetValue<double?>("Vika:Generation:RepeatPenalty") ?? 1.3
-            }
+           MaxTokens = _configuration.GetValue<int?>("Vika:Generation:MaxTokens") ?? 500
+          
         };
-#pragma warning restore SKEXP0070
     }
 
     private async Task<RagContext> HoleRagKontext(string nachricht, Guid mandantId)

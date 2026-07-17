@@ -99,18 +99,15 @@ builder.Services.AddScoped<FileStorageService>();
 
 // VIKA ChatBot — Semantic Kernel + Ollama (Phi-4 Mini)
 var ollamaEndpoint = builder.Configuration["Vika:OllamaEndpoint"] ?? "http://localhost:11434";
-var ollamaModel = builder.Configuration["Vika:Model"] ?? "phi4-mini";
+var groqApiKey = builder.Configuration["Vika:GroqApiKey"]!;
+var groqModel = builder.Configuration["Vika:Model"] ?? "llama-3.1-8b-instant";
 
 var kernelBuilder = Kernel.CreateBuilder();
-#pragma warning disable SKEXP0070
-// CPU-Inferenz auf Ollama kann lange dauern; Timeout deutlich erhöhen
-var ollamaHttpClient = new HttpClient
-{
-    BaseAddress = new Uri(ollamaEndpoint),
-    Timeout = TimeSpan.FromMinutes(10)
-};
-kernelBuilder.AddOllamaChatCompletion(ollamaModel, ollamaHttpClient);
-#pragma warning restore SKEXP0070
+kernelBuilder.AddOpenAIChatCompletion(
+    modelId: groqModel,
+    apiKey: groqApiKey,
+    httpClient: new HttpClient { BaseAddress = new Uri("https://api.groq.com/openai/v1") }
+);
 var kernel = kernelBuilder.Build();
 
 builder.Services.AddSingleton(kernel);
@@ -133,7 +130,7 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
             .WithOllamaTextGeneration(new OllamaConfig
             {
                 Endpoint = ollamaEndpoint,
-                TextModel = new OllamaModelConfig(ollamaModel)
+                TextModel = new OllamaModelConfig(groqModel)
             });
 
         if (useQdrant)

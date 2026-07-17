@@ -18,8 +18,9 @@ services:
       - SmtpSettings__Port=${SMTP_PORT}
       - SmtpSettings__User=${SMTP_EMAIL}
       - SmtpSettings__Pass=${SMTP_PASSWORD}
+      - Vika__GroqApiKey=${GROQ_API_KEY}
       - Vika__OllamaEndpoint=http://ollama:11434
-      - Vika__Model=qwen2.5-coder:1.5b
+      - Vika__Model=llama-3.1-8b-instant
       - Vika__QdrantEndpoint=http://qdrant:6333
       - Vika__EmbeddingModel=nomic-embed-text
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN_1}
