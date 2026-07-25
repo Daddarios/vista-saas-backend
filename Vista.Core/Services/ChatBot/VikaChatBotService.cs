@@ -91,7 +91,8 @@ public class VikaChatBotService
             };
         }
 
-        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint);
+        var allowTools = route == AnfrageRoute.Data;
+        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint, allowTools);
         var kernel = route == AnfrageRoute.Data ? KernelMitPlugins() : _kernel;
         var settings = ErstelleAusfuehrungseinstellungen(route == AnfrageRoute.Data);
 
@@ -136,7 +137,8 @@ public class VikaChatBotService
             yield break;
         }
 
-        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint);
+        var allowTools = route == AnfrageRoute.Data;
+        var history = ErstelleHistory(nachricht, rag.KontextText, sprachPolicy.SystemHint, allowTools);
         var kernel = route == AnfrageRoute.Data ? KernelMitPlugins() : _kernel;
         var settings = ErstelleAusfuehrungseinstellungen(route == AnfrageRoute.Data);
 
@@ -147,6 +149,7 @@ public class VikaChatBotService
                 complete.Append(part.Content);
         }
 
+        _logger.LogInformation("VIKA Raw Response: '{Raw}'", complete.ToString());
         var final = FinalSanitize(complete.ToString());
         const int chunkSize = 120;
         for (var i = 0; i < final.Length; i += chunkSize)
@@ -179,12 +182,20 @@ public class VikaChatBotService
         return (true, string.Empty);
     }
 
-    private ChatHistory ErstelleHistory(string nachricht, string? ragKontext, string? languageHint)
+    private ChatHistory ErstelleHistory(string nachricht, string? ragKontext, string? languageHint, bool allowTools)
     {
         var history = new ChatHistory();
         history.AddSystemMessage(SystemPrompt);
         if (!string.IsNullOrWhiteSpace(languageHint))
             history.AddSystemMessage(languageHint);
+
+        if (allowTools)
+        {
+            history.AddSystemMessage(
+                "IMPORTANT: You have access to tools to fetch real-time data. " +
+                "If a user asks for data (like counts, statuses, or details), you MUST call the appropriate tool. " +
+                "DO NOT output any reasoning or thoughts. ONLY output the tool call.");
+        }
 
         if (!string.IsNullOrWhiteSpace(ragKontext))
         {

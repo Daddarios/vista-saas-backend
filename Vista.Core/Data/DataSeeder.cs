@@ -27,14 +27,16 @@ public static class DataSeeder
                 await roleManager.CreateAsync(new IdentityRole(rolle));
         }
 
-        // Demo admin only in Development.
-        if (!env.IsDevelopment())
+        // Demo admin: Development'ta her zaman, Production'da sadece SEED_ADMIN=true ise.
+        var config = serviceProvider.GetRequiredService<IConfiguration>();
+        var seedAdminInProd = config.GetValue<bool>("SEED_ADMIN");
+        if (!env.IsDevelopment() && !seedAdminInProd)
         {
             return;
         }
 
         const string adminEmail = "admin@vista.local";
-        const string adminPassword = "Test123!";
+        var adminPassword = config["SEED_ADMIN_PASSWORD"] ?? "Test123!";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
 
         var resolvedMandantId = defaultMandantId == Guid.Empty

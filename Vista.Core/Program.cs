@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.SemanticKernel;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.AI.Ollama;
+using Microsoft.KernelMemory.AI.OpenAI;
 using Vista.Core.Data;
 using Vista.Core.Middleware;
 using Vista.Core.Models;
@@ -30,7 +31,7 @@ builder.Host.UseSerilog();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddIdentity<Benutzer, IdentityRole>(opt =>
 {
@@ -125,12 +126,13 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
             .WithOllamaTextEmbeddingGeneration(new OllamaConfig
             {
                 Endpoint = ollamaEndpoint,
-                TextModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
+                EmbeddingModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
             })
-            .WithOllamaTextGeneration(new OllamaConfig
+            .WithOpenAITextGeneration(new OpenAIConfig
             {
-                Endpoint = ollamaEndpoint,
-                TextModel = new OllamaModelConfig(groqModel)
+                APIKey = groqApiKey,
+                TextModel = groqModel,
+                Endpoint = "https://api.groq.com/openai/v1"
             });
 
         if (useQdrant)
