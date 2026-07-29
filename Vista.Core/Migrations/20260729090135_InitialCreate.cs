@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -16,10 +15,10 @@ namespace Vista.Core.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -30,29 +29,29 @@ namespace Vista.Core.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    Vorname = table.Column<string>(type: "text", nullable: false),
-                    Nachname = table.Column<string>(type: "text", nullable: false),
-                    RufNummer = table.Column<string>(type: "text", nullable: false),
-                    Abteilung = table.Column<string>(type: "text", nullable: false),
-                    Rolle = table.Column<string>(type: "text", nullable: false),
-                    Bild = table.Column<string>(type: "text", nullable: false),
-                    Hinweise = table.Column<string>(type: "text", nullable: false),
-                    MandantId = table.Column<string>(type: "text", nullable: false),
-                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: true),
-                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Vorname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nachname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RufNummer = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Abteilung = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Rolle = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Bild = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Hinweise = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MandantId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -63,17 +62,17 @@ namespace Vista.Core.Migrations
                 name: "Berichte",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Titel = table.Column<string>(type: "text", nullable: false),
-                    DateiPfad = table.Column<string>(type: "text", nullable: false),
-                    DateiTyp = table.Column<string>(type: "text", nullable: false),
-                    Version = table.Column<string>(type: "text", nullable: false),
-                    HochgeladenAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    BearbeitetAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Titel = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DateiPfad = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DateiTyp = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Version = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    HochgeladenAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BearbeitetAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,21 +83,21 @@ namespace Vista.Core.Migrations
                 name: "Kunden",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Unternehmen = table.Column<string>(type: "text", nullable: false),
-                    Vorname = table.Column<string>(type: "text", nullable: false),
-                    Nachname = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    TelefonMobil = table.Column<string>(type: "text", nullable: false),
-                    TelefonHaus = table.Column<string>(type: "text", nullable: false),
-                    Adresse = table.Column<string>(type: "text", nullable: false),
-                    Website = table.Column<string>(type: "text", nullable: false),
-                    Logo = table.Column<string>(type: "text", nullable: false),
-                    Hinweise = table.Column<string>(type: "text", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Unternehmen = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Vorname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nachname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TelefonMobil = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TelefonHaus = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Adresse = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Website = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Logo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Hinweise = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -109,13 +108,13 @@ namespace Vista.Core.Migrations
                 name: "Mandanten",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Domain = table.Column<string>(type: "text", nullable: false),
-                    IstAktiv = table.Column<bool>(type: "boolean", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Domain = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IstAktiv = table.Column<bool>(type: "bit", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,11 +125,11 @@ namespace Vista.Core.Migrations
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RoleId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -147,11 +146,11 @@ namespace Vista.Core.Migrations
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    ClaimType = table.Column<string>(type: "text", nullable: true),
-                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -168,10 +167,10 @@ namespace Vista.Core.Migrations
                 name: "AspNetUserLogins",
                 columns: table => new
                 {
-                    LoginProvider = table.Column<string>(type: "text", nullable: false),
-                    ProviderKey = table.Column<string>(type: "text", nullable: false),
-                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -188,8 +187,8 @@ namespace Vista.Core.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    RoleId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    RoleId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -212,10 +211,10 @@ namespace Vista.Core.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    LoginProvider = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Value = table.Column<string>(type: "text", nullable: true)
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -232,15 +231,15 @@ namespace Vista.Core.Migrations
                 name: "RefreshTokens",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Token = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    BenutzerId = table.Column<string>(type: "text", nullable: false),
-                    AblaufDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IstWiderrufen = table.Column<bool>(type: "boolean", nullable: false),
-                    ErsetztDurch = table.Column<string>(type: "text", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Token = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    BenutzerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    AblaufDatum = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IstWiderrufen = table.Column<bool>(type: "bit", nullable: false),
+                    ErsetztDurch = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -257,15 +256,15 @@ namespace Vista.Core.Migrations
                 name: "Filialen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Adresse = table.Column<string>(type: "text", nullable: false),
-                    Telefon = table.Column<string>(type: "text", nullable: false),
-                    KundeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Adresse = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Telefon = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    KundeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -282,20 +281,20 @@ namespace Vista.Core.Migrations
                 name: "Projekte",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Beschreibung = table.Column<string>(type: "text", nullable: false),
-                    Startdatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Enddatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    Prioritaet = table.Column<string>(type: "text", nullable: false),
-                    AbschlussInProzent = table.Column<int>(type: "integer", nullable: false),
-                    IstAbgeschlossen = table.Column<bool>(type: "boolean", nullable: false),
-                    KundeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Beschreibung = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Startdatum = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Enddatum = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Prioritaet = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AbschlussInProzent = table.Column<int>(type: "int", nullable: false),
+                    IstAbgeschlossen = table.Column<bool>(type: "bit", nullable: false),
+                    KundeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -312,17 +311,17 @@ namespace Vista.Core.Migrations
                 name: "Abonnements",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Plan = table.Column<int>(type: "integer", nullable: false),
-                    PlanName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Preis = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    StartDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EndDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstAktiv = table.Column<bool>(type: "boolean", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Plan = table.Column<int>(type: "int", nullable: false),
+                    PlanName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Preis = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    StartDatum = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndDatum = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstAktiv = table.Column<bool>(type: "bit", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -339,17 +338,17 @@ namespace Vista.Core.Migrations
                 name: "Ansprechpartner",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Telefon = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    Abteilung = table.Column<string>(type: "text", nullable: false),
-                    KundeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FilialeId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Telefon = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Abteilung = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    KundeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FilialeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -372,8 +371,8 @@ namespace Vista.Core.Migrations
                 name: "BenutzerProjekte",
                 columns: table => new
                 {
-                    ProjektId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BenutzerId = table.Column<string>(type: "text", nullable: false)
+                    ProjektId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BenutzerId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -396,20 +395,20 @@ namespace Vista.Core.Migrations
                 name: "Tickets",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Titel = table.Column<string>(type: "text", nullable: false),
-                    Beschreibung = table.Column<string>(type: "text", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    Prioritaet = table.Column<string>(type: "text", nullable: false),
-                    Kategorie = table.Column<string>(type: "text", nullable: false),
-                    Faelligkeitsdatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ZugewiesenAnId = table.Column<string>(type: "text", nullable: true),
-                    KundeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProjektId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Titel = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Beschreibung = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Prioritaet = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Kategorie = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Faelligkeitsdatum = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ZugewiesenAnId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    KundeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProjektId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -438,18 +437,18 @@ namespace Vista.Core.Migrations
                 name: "Rechnungen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AbonnementId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Nummer = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Betrag = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    RechnungsDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    FaelligkeitsDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    PdfPfad = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AbonnementId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Nummer = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Betrag = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    RechnungsDatum = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FaelligkeitsDatum = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    PdfPfad = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -472,17 +471,17 @@ namespace Vista.Core.Migrations
                 name: "ChatRaeume",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    ProjektId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TicketId = table.Column<Guid>(type: "uuid", nullable: true),
-                    IstDirektChat = table.Column<bool>(type: "boolean", nullable: false),
-                    Benutzer1Id = table.Column<string>(type: "text", nullable: true),
-                    Benutzer2Id = table.Column<string>(type: "text", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ProjektId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    TicketId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IstDirektChat = table.Column<bool>(type: "bit", nullable: false),
+                    Benutzer1Id = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    Benutzer2Id = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -517,16 +516,16 @@ namespace Vista.Core.Migrations
                 name: "TicketNachrichten",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TicketId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AbsenderId = table.Column<string>(type: "text", nullable: false),
-                    Inhalt = table.Column<string>(type: "text", nullable: false),
-                    IstInternNotiz = table.Column<bool>(type: "boolean", nullable: false),
-                    GeschicktAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TicketId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AbsenderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Inhalt = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IstInternNotiz = table.Column<bool>(type: "bit", nullable: false),
+                    GeschicktAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -549,18 +548,18 @@ namespace Vista.Core.Migrations
                 name: "Zahlungen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RechnungId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Betrag = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    ZahlungsDatum = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    TransaktionId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    IBAN = table.Column<string>(type: "character varying(34)", maxLength: 34, nullable: true),
-                    Hinweise = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RechnungId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Betrag = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ZahlungsDatum = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    TransaktionId = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    IBAN = table.Column<string>(type: "nvarchar(34)", maxLength: 34, nullable: true),
+                    Hinweise = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -583,20 +582,20 @@ namespace Vista.Core.Migrations
                 name: "ChatNachrichten",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    RaumId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AbsenderId = table.Column<string>(type: "text", nullable: false),
-                    Inhalt = table.Column<string>(type: "text", nullable: false),
-                    GeschicktAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IstDatei = table.Column<bool>(type: "boolean", nullable: false),
-                    DateiPfad = table.Column<string>(type: "text", nullable: true),
-                    DateiName = table.Column<string>(type: "text", nullable: true),
-                    DateiTyp = table.Column<string>(type: "text", nullable: true),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RaumId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AbsenderId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Inhalt = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GeschicktAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IstDatei = table.Column<bool>(type: "bit", nullable: false),
+                    DateiPfad = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DateiName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DateiTyp = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateiGroesse = table.Column<long>(type: "bigint", nullable: true),
-                    ErstelltAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AktualisiertAm = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    IstGeloescht = table.Column<bool>(type: "boolean", nullable: false),
-                    MandantId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ErstelltAm = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AktualisiertAm = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IstGeloescht = table.Column<bool>(type: "bit", nullable: false),
+                    MandantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -639,7 +638,8 @@ namespace Vista.Core.Migrations
                 name: "RoleNameIndex",
                 table: "AspNetRoles",
                 column: "NormalizedName",
-                unique: true);
+                unique: true,
+                filter: "[NormalizedName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserClaims_UserId",
@@ -665,7 +665,8 @@ namespace Vista.Core.Migrations
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
-                unique: true);
+                unique: true,
+                filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_BenutzerProjekte_BenutzerId",

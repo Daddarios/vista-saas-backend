@@ -8,7 +8,7 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=VistaCoreDB;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__Default=Server=mssql,1433;Database=VistaCoreDB;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True
       - Jwt__Key=${JWT_KEY}
       - Jwt__Issuer=VistaCRM
       - Jwt__Audience=VistaCRM
@@ -20,14 +20,15 @@ services:
       - Vika__GroqApiKey=${GROQ_API_KEY}
       - Vika__Model=llama-3.1-8b-instant
       - SEED_ADMIN=true
-      # - Redis__Configuration=redis:6379
+      - Redis__Configuration=redis:6379
       # - Vika__OllamaEndpoint=http://ollama:11434
       # - Vika__QdrantEndpoint=http://qdrant:6333
       # - Vika__EmbeddingModel=nomic-embed-text
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN_1}
       - Cors__AllowedOrigins__1=${FRONTEND_ORIGIN_2}
+      - Cors__AllowedOrigins__2=${FRONTEND_ORIGIN_3}
     depends_on:
-      postgres:
+      mssql:
         condition: service_healthy
     volumes:
       - ./Vista.Core/.VikaRules.md:/app/.VikaRules.md:ro
@@ -35,55 +36,54 @@ services:
       - app-logs:/app/Logs
     restart: unless-stopped
 
-  postgres:
-    image: postgres:16
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     ports:
-      - "5432:5432"
+      - "1433:1433"
     environment:
-      - POSTGRES_DB=VistaCoreDB
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mssql-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d VistaCoreDB"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
-  # --- Opsiyonel servisler (ileride gerekirse yorumdan cikar) ---
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis-data:/data
-  #   restart: unless-stopped
+  # --- Opsiyonel servisler (RAG icin) ---
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
 
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: vistacore-ollama
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama-data:/root/.ollama
-  #   restart: unless-stopped
+  ollama:
+    image: ollama/ollama:latest
+    container_name: vistacore-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
 
-  # qdrant:
-  #   image: qdrant/qdrant:latest
-  #   container_name: vistacore-qdrant
-  #   ports:
-  #     - "6333:6333"
-  #   volumes:
-  #     - qdrant-data:/qdrant/storage
-  #   restart: unless-stopped
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: vistacore-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
 
 volumes:
   app-storage:
   app-logs:
-  postgres-data:
-  # redis-data:
-  # ollama-data:
-  # qdrant-data:
+  mssql-data:
+  redis-data:
+  ollama-data:
+  qdrant-data:
