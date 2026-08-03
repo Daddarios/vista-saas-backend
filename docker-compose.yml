@@ -18,12 +18,13 @@ services:
       - SmtpSettings__User=${SMTP_EMAIL}
       - SmtpSettings__Pass=${SMTP_PASSWORD}
       - Vika__GroqApiKey=${GROQ_API_KEY}
-      - Vika__Model=llama-3.1-8b-instant
+      - Vika__Model=llama-3.3-70b-versatile
+      - Vika__GeminiApiKey=${GEMINI_API_KEY}
+      - Vika__EmbeddingModel=gemini-embedding-001
+      - Vika__QdrantEndpoint=http://qdrant:6333
+      - Vika__QdrantApiKey=
       - SEED_ADMIN=true
       - Redis__Configuration=redis:6379
-      # - Vika__OllamaEndpoint=http://ollama:11434
-      # - Vika__QdrantEndpoint=http://qdrant:6333
-      # - Vika__EmbeddingModel=nomic-embed-text
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN_1}
       - Cors__AllowedOrigins__1=${FRONTEND_ORIGIN_2}
       - Cors__AllowedOrigins__2=${FRONTEND_ORIGIN_3}
@@ -62,15 +63,6 @@ services:
       - redis-data:/data
     restart: unless-stopped
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: vistacore-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    restart: unless-stopped
-
   qdrant:
     image: qdrant/qdrant:latest
     container_name: vistacore-qdrant
@@ -85,5 +77,4 @@ volumes:
   app-logs:
   mssql-data:
   redis-data:
-  ollama-data:
   qdrant-data:

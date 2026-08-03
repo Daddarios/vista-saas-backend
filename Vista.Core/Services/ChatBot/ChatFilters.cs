@@ -1,6 +1,22 @@
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.SemanticKernel;
 
 namespace Vista.Core.Services.ChatBot;
+
+/// <summary>
+/// Begrenzt die Auto-Function-Calling-Schleife (Token-Budget / Groq Free Tier).
+/// </summary>
+public class MaxToolCallsFilter : IAutoFunctionInvocationFilter
+{
+    private const int MaxRunden = 2;
+
+    public async Task OnAutoFunctionInvocationAsync(AutoFunctionInvocationContext context, Func<AutoFunctionInvocationContext, Task> next)
+    {
+        await next(context);
+        if (context.RequestSequenceIndex >= MaxRunden - 1)
+            context.Terminate = true;
+    }
+}
 
 public class ChatInputFilter
 {

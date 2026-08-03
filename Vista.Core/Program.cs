@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.SemanticKernel;
 using Microsoft.KernelMemory;
-using Microsoft.KernelMemory.AI.Ollama;
 using Microsoft.KernelMemory.AI.OpenAI;
 using Vista.Core.Data;
 using Vista.Core.Middleware;
@@ -98,10 +97,12 @@ builder.Services.AddScoped<ZweiFaktorService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<FileStorageService>();
 
-// VIKA ChatBot — Semantic Kernel + Ollama (Phi-4 Mini)
-var ollamaEndpoint = builder.Configuration["Vika:OllamaEndpoint"] ?? "http://localhost:11434";
+// VIKA ChatBot — Semantic Kernel + Groq (LLM) + Gemini (Embedding)
 var groqApiKey = builder.Configuration["Vika:GroqApiKey"]!;
-var groqModel = builder.Configuration["Vika:Model"] ?? "llama-3.1-8b-instant";
+var groqModel = builder.Configuration["Vika:Model"] ?? "llama-3.3-70b-versatile";
+var geminiApiKey = builder.Configuration["Vika:GeminiApiKey"];
+var embeddingModel = builder.Configuration["Vika:EmbeddingModel"] ?? "gemini-embedding-001";
+var embeddingEndpoint = builder.Configuration["Vika:EmbeddingEndpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/";
 
 var kernelBuilder = Kernel.CreateBuilder();
 kernelBuilder.AddOpenAIChatCompletion(
@@ -110,12 +111,14 @@ kernelBuilder.AddOpenAIChatCompletion(
     httpClient: new HttpClient { BaseAddress = new Uri("https://api.groq.com/openai/v1") }
 );
 var kernel = kernelBuilder.Build();
+kernel.AutoFunctionInvocationFilters.Add(new MaxToolCallsFilter());
 
 builder.Services.AddSingleton(kernel);
 builder.Services.AddSingleton(kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
 
-// Kernel Memory (RAG) — Qdrant (Production) veya SimpleVectorDb (Development)
+// Kernel Memory (RAG) — Qdrant (Production/Cloud) veya SimpleVectorDb (Development)
 var qdrantEndpoint = builder.Configuration["Vika:QdrantEndpoint"];
+var qdrantApiKey = builder.Configuration["Vika:QdrantApiKey"] ?? string.Empty;
 var useQdrant = !string.IsNullOrEmpty(qdrantEndpoint) && builder.Environment.IsProduction();
 
 builder.Services.AddSingleton<IKernelMemory>(sp => 
@@ -123,10 +126,11 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
     try
     {
         var memoryBuilder = new KernelMemoryBuilder()
-            .WithOllamaTextEmbeddingGeneration(new OllamaConfig
+            .WithOpenAITextEmbeddingGeneration(new OpenAIConfig
             {
-                Endpoint = ollamaEndpoint,
-                EmbeddingModel = new OllamaModelConfig(builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text")
+                APIKey = geminiApiKey ?? string.Empty,
+                EmbeddingModel = embeddingModel,
+                Endpoint = embeddingEndpoint
             })
             .WithOpenAITextGeneration(new OpenAIConfig
             {
@@ -138,7 +142,7 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
         if (useQdrant)
         {
             Log.Information("KernelMemory: Qdrant @ {Endpoint}", qdrantEndpoint);
-            memoryBuilder.WithQdrantMemoryDb(qdrantEndpoint!);
+            memoryBuilder.WithQdrantMemoryDb(qdrantEndpoint!, qdrantApiKey);
         }
         else
         {
@@ -203,6 +207,7 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var dbContext = services.GetRequiredService<AppDbContext>();
+    await dbContext.Database.MigrateAsync();
     await DataSeeder.SeedAsync(dbContext);
     await DataSeeder.SeedRolesAndUsersAsync(services);
 }

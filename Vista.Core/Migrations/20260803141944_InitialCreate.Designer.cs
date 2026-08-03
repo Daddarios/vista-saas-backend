@@ -12,7 +12,7 @@ using Vista.Core.Data;
 namespace Vista.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260729090135_InitialCreate")]
+    [Migration("20260803141944_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
