@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.KernelMemory;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Microsoft.SemanticKernel.Connectors.Ollama;
 using Vista.Core.DTOs.ChatBot;
 using Vista.Core.Plugins;
 
@@ -208,14 +208,13 @@ public class VikaChatBotService
         return history;
     }
 
-    private OpenAIPromptExecutionSettings ErstelleAusfuehrungseinstellungen(bool allowTools)
+    private OllamaPromptExecutionSettings ErstelleAusfuehrungseinstellungen(bool allowTools)
     {
-        return new OpenAIPromptExecutionSettings
+        return new OllamaPromptExecutionSettings
         {
             FunctionChoiceBehavior = allowTools ? FunctionChoiceBehavior.Auto() : FunctionChoiceBehavior.None(),
             Temperature = _configuration.GetValue<float?>("Vika:Generation:Temperature") ?? 0.0f,
-           MaxTokens = _configuration.GetValue<int?>("Vika:Generation:MaxTokens") ?? 500
-          
+            NumPredict = _configuration.GetValue<int?>("Vika:Generation:MaxTokens") ?? 500
         };
     }
 

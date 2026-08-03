@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.SemanticKernel;
 using Microsoft.KernelMemory;
-using Microsoft.KernelMemory.AI.OpenAI;
+using Microsoft.KernelMemory.AI.Ollama;
 using Vista.Core.Data;
 using Vista.Core.Middleware;
 using Vista.Core.Models;
@@ -97,19 +97,18 @@ builder.Services.AddScoped<ZweiFaktorService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<FileStorageService>();
 
-// VIKA ChatBot — Semantic Kernel + Groq (LLM) + Gemini (Embedding)
-var groqApiKey = builder.Configuration["Vika:GroqApiKey"]!;
-var groqModel = builder.Configuration["Vika:Model"] ?? "llama-3.3-70b-versatile";
-var geminiApiKey = builder.Configuration["Vika:GeminiApiKey"];
-var embeddingModel = builder.Configuration["Vika:EmbeddingModel"] ?? "gemini-embedding-001";
-var embeddingEndpoint = builder.Configuration["Vika:EmbeddingEndpoint"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/";
+// VIKA ChatBot — Semantic Kernel + Ollama (tam kapalı sistem, dış API yok)
+var ollamaEndpoint = builder.Configuration["Vika:OllamaEndpoint"] ?? "http://localhost:11434";
+var chatModel = builder.Configuration["Vika:Model"] ?? "llama3.2:3b";
+var embeddingModel = builder.Configuration["Vika:EmbeddingModel"] ?? "nomic-embed-text";
 
 var kernelBuilder = Kernel.CreateBuilder();
-kernelBuilder.AddOpenAIChatCompletion(
-    modelId: groqModel,
-    apiKey: groqApiKey,
-    httpClient: new HttpClient { BaseAddress = new Uri("https://api.groq.com/openai/v1") }
+#pragma warning disable SKEXP0070
+kernelBuilder.AddOllamaChatCompletion(
+    modelId: chatModel,
+    endpoint: new Uri(ollamaEndpoint)
 );
+#pragma warning restore SKEXP0070
 var kernel = kernelBuilder.Build();
 kernel.AutoFunctionInvocationFilters.Add(new MaxToolCallsFilter());
 
@@ -126,17 +125,15 @@ builder.Services.AddSingleton<IKernelMemory>(sp =>
     try
     {
         var memoryBuilder = new KernelMemoryBuilder()
-            .WithOpenAITextEmbeddingGeneration(new OpenAIConfig
+            .WithOllamaTextEmbeddingGeneration(new OllamaConfig
             {
-                APIKey = geminiApiKey ?? string.Empty,
-                EmbeddingModel = embeddingModel,
-                Endpoint = embeddingEndpoint
+                Endpoint = ollamaEndpoint,
+                EmbeddingModel = new OllamaModelConfig(embeddingModel)
             })
-            .WithOpenAITextGeneration(new OpenAIConfig
+            .WithOllamaTextGeneration(new OllamaConfig
             {
-                APIKey = groqApiKey,
-                TextModel = groqModel,
-                Endpoint = "https://api.groq.com/openai/v1"
+                Endpoint = ollamaEndpoint,
+                TextModel = new OllamaModelConfig(chatModel)
             });
 
         if (useQdrant)
